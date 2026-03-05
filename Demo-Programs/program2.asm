@@ -1,0 +1,7 @@
+LD X, 200
+MOVI 30
+CMP X
+BRN neg
+MOV X, 30
+ST X, 200
+neg: END

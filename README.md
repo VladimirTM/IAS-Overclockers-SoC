@@ -33,7 +33,7 @@ This project demonstrates advanced concepts in digital design, including CPU arc
   - Python-based assembler for assembly-to-machine-code translation (supports comma-separated operands)
   - Interactive memory initialization tool
   - Comprehensive testbench suite
-- **Robust Testing**: 22 module testbenches with 400+ test cases (all PASS)
+- **Robust Testing**: 23 module testbenches with 480+ test cases (all PASS)
 - **Build Automation**: Makefile-based workflow with shell script wrappers
 - **Waveform Analysis**: VCD file generation for GTKWave debugging
 
@@ -601,7 +601,7 @@ IAS-Overclockers/
 
 The project includes comprehensive testing at multiple levels:
 
-**Component Testing (22 Module Testbenches):**
+**Component Testing (23 Module Testbenches):**
 
 - Individual modules tested in isolation (Module-Testing/ directory)
 - Automated test runner script: `run_all_testbenches.sh`
@@ -616,6 +616,7 @@ The project includes comprehensive testing at multiple levels:
 **Module Test Summary:**
 | Module | Tests | Status |
 |--------|-------|--------|
+| alu_negative_test_tb.v | 24 | ✓ PASS |
 | accumulator_tb.v | 10 | ✓ PASS |
 | alu_tb.v | 46 | ✓ PASS |
 | ar_tb.v | 14 | ✓ PASS |
@@ -653,11 +654,13 @@ The project includes comprehensive testing at multiple levels:
 
 ### Running Module Tests
 
-Run all 22 module testbenches:
+Run all 23 module testbenches (including `alu_negative_test_tb.v`):
 
 ```bash
 cd Module-Testing && bash run_all_testbenches.sh
 ```
+
+The script runs all `*_tb.v` files (including `alu_negative_test_tb.v`), prints per-testbench results, and reports a combined PASS/FAIL total. `cpu_tb.v` is excluded — use `make test` (which assembles the program first) to run that testbench.
 
 ### Test Output Format
 
@@ -947,6 +950,6 @@ For questions about this project or collaboration opportunities, please refer to
 
 ---
 
-**Last Updated**: January 2026
-**Project Status**: Completed and Validated (22 module testbenches, 500+ tests, all passing)
-**Version**: 2.1 (with JMP, PUSH/POP, MOVR, BGT, BLT, BGE, BLE, BEQ, BNE, NOP extensions)
+**Last Updated**: March 2026
+**Project Status**: Completed and Validated (23 module testbenches, 480+ tests, all passing)
+**Version**: 2.2 (mining_core refactored to use rca/barrel_shifter/logic_unit sub-components; barrel_shifter RSR/RSL shift overflow fix; controlUnit idle port added)

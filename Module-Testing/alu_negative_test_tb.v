@@ -3,7 +3,7 @@
 // Negative Number Test for 16-bit ALU
 // Tests signed arithmetic operations with negative operands
 
-module alu_negative_test;
+module alu_negative_test_tb;
 
     reg clk;
     reg rst_b;

@@ -318,7 +318,8 @@ module ALU (
         .sh1(sh1),
         .logic_enable(logic_enable),
         .shift_start(shift_start),
-        .END(END)
+        .END(END),
+        .idle(a0)
     );
 
     // Output (apply sign for DIV/MOD)
@@ -382,6 +383,5 @@ module ALU (
     end
 
     assign EXC = exception;
-    assign a0 = cu.st[0];
 
 endmodule

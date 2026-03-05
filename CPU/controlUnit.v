@@ -21,7 +21,8 @@ module controlUnit (
     output sh0, sh1,
     output logic_enable,
     output shift_start,
-    output END
+    output END,
+    output idle
 );
 
     localparam A0 = 0;
@@ -160,5 +161,6 @@ module controlUnit (
     end
 
     assign END = s4 | m7 | m8 | d16 | d17 | d18 | l1 | sh1;
+    assign idle = st[A0];
 
 endmodule

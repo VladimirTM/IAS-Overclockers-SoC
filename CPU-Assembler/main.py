@@ -62,7 +62,7 @@ def extract_label(instruction, line_number, labels):
 def encode_instruction(instruction, labels):
     """Convert assembly instruction to 16-bit binary machine code."""
     words = instruction.split()
-    opcode = words[0]
+    opcode = words[0].upper()
     binary = OPCODE[opcode]
     op_value = int(binary, 2)
 
@@ -74,7 +74,7 @@ def encode_instruction(instruction, labels):
     # Memory operations: LD (1), ST (2)
     # Format: opcode + reg_bit (0=X, 1=Y) + 9-bit address
     if op_value in {1, 2}:
-        reg_bit = '0' if parse_operand(words[1]) == 'X' else '1'
+        reg_bit = '0' if parse_operand(words[1]).upper() == 'X' else '1'
         address = format(int(parse_operand(words[2])), '09b')
         return binary + reg_bit + address
 
@@ -95,20 +95,20 @@ def encode_instruction(instruction, labels):
     # MOV instruction (25): Move immediate to register
     # Format: opcode + reg_bit (0=X, 1=Y) + 9-bit immediate value
     if op_value == 25:
-        reg_bit = '0' if parse_operand(words[1]) == 'X' else '1'
+        reg_bit = '0' if parse_operand(words[1]).upper() == 'X' else '1'
         immediate = to_twos_complement(int(parse_operand(words[2])), 9)
         return binary + reg_bit + immediate
 
     # Register operations: ADD-TST (10-24), INC (26), DEC (27)
     # Format: opcode + reg_bit (0=X, 1=Y) + 9 zero bits
     if (10 <= op_value <= 24) or op_value in {26, 27}:
-        reg_bit = '0' if parse_operand(words[1]) == 'X' else '1'
+        reg_bit = '0' if parse_operand(words[1]).upper() == 'X' else '1'
         return binary + reg_bit + '0' * 9
 
     # PUSH/POP register operations: PUSH (35), POP (36)
     # Format: opcode + reg_bit (0=X, 1=Y) + 9 zero bits
     if op_value in {35, 36}:
-        reg_bit = '0' if parse_operand(words[1]) == 'X' else '1'
+        reg_bit = '0' if parse_operand(words[1]).upper() == 'X' else '1'
         return binary + reg_bit + '0' * 9
 
     # MOVI (57): Move immediate value to register

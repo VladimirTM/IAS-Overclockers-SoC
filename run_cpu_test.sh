@@ -149,8 +149,10 @@ echo ""
 echo -e "${BLUE}[3/4]${NC} Compiling testbench: $TB_FILE..."
 # Find all .v files in CPU directory, excluding testbenches
 CPU_FILES=$(find CPU -name "*.v" ! -name "*_tb*.v")
-iverilog -o "$SIM_OUT" $CPU_FILES "$TB_FILE" 2>&1 | grep -v "warning: \$readmemb\|warning: .*_tb" || true
-if [ ${PIPESTATUS[0]} -eq 0 ]; then
+iverilog -o "$SIM_OUT" $CPU_FILES "$TB_FILE" 2>&1 | grep -v "warning: \$readmemb\|warning: .*_tb"
+compile_status=${PIPESTATUS[0]}
+true
+if [ $compile_status -eq 0 ]; then
     echo -e "${GREEN}✓${NC} Compilation successful (output: $SIM_OUT)"
 else
     echo -e "${RED}✗${NC} Compilation failed"

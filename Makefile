@@ -44,7 +44,11 @@ compile:
 		exit 1; \
 	fi
 	@echo "Compiling testbench: $(TB_PATH)..."
-	@iverilog -o $(SIM_OUT) $(shell find CPU -name "*.v" ! -name "*_tb*.v") $(TB_PATH) 2>&1 | grep -v "warning: .readmemb\|warning: .*_tb" || true
+	@iverilog -o $(SIM_OUT) $(shell find CPU -name "*.v" ! -name "*_tb*.v") $(TB_PATH) >compile_errors.tmp 2>&1; \
+	  istat=$$?; \
+	  grep -v "warning: .readmemb\|warning: .*_tb" compile_errors.tmp || true; \
+	  rm -f compile_errors.tmp; \
+	  if [ $$istat -ne 0 ]; then echo "Compilation failed"; exit 1; fi
 	@echo "✓ Compilation complete (output: $(SIM_OUT))"
 
 # Run the simulation
@@ -78,7 +82,11 @@ test:
 	fi
 	@python3 CPU-Assembler/main.py $(ASM) data_bin_temp.txt
 	@python3 data_init.py --input data_bin_temp.txt --output data_bin.txt
-	@iverilog -o $(SIM_OUT) $(shell find CPU -name "*.v" ! -name "*_tb*.v") $(TB_PATH) 2>&1 | grep -v "warning: .readmemb\|warning: .*_tb" || true
+	@iverilog -o $(SIM_OUT) $(shell find CPU -name "*.v" ! -name "*_tb*.v") $(TB_PATH) >compile_errors.tmp 2>&1; \
+	  istat=$$?; \
+	  grep -v "warning: .readmemb\|warning: .*_tb" compile_errors.tmp || true; \
+	  rm -f compile_errors.tmp; \
+	  if [ $$istat -ne 0 ]; then echo "Compilation failed"; exit 1; fi
 	@echo ""
 	@vvp $(SIM_OUT)
 	@rm -f data_bin_temp.txt
@@ -109,7 +117,11 @@ simple:
 	@echo ""
 	@python3 CPU-Assembler/main.py $(ASM) data_bin_temp.txt
 	@python3 data_init.py --input data_bin_temp.txt --output data_bin.txt
-	@iverilog -o cpu_tb_sim $(shell find CPU -name "*.v" ! -name "*_tb*.v") cpu_tb.v 2>&1 | grep -v "warning: .readmemb\|warning: .*_tb" || true
+	@iverilog -o cpu_tb_sim $(shell find CPU -name "*.v" ! -name "*_tb*.v") cpu_tb.v >compile_errors.tmp 2>&1; \
+	  istat=$$?; \
+	  grep -v "warning: .readmemb\|warning: .*_tb" compile_errors.tmp || true; \
+	  rm -f compile_errors.tmp; \
+	  if [ $$istat -ne 0 ]; then echo "Compilation failed"; exit 1; fi
 	@echo ""
 	@vvp cpu_tb_sim
 	@rm -f data_bin_temp.txt

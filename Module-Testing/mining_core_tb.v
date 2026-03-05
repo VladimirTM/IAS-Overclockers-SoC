@@ -35,7 +35,7 @@ task check_mining;
         test_count = test_count + 1;
         
         res_ok = (result_nonce == exp_nonce);
-        hash_ok = (hash_out <= exp_hash);
+        hash_ok = (hash_out == exp_hash);
 
         if (res_ok && hash_ok && done) begin
             $display("Test %2d PASS: %s", test_count, test_name);
@@ -85,7 +85,7 @@ initial begin
     
     @(posedge done); // Asteptam finalizarea calculului
     @ (negedge clk); // done like this for iverilog testing script
-    check_mining("Mining: Target Maxim (Solutie imediata)", 16'h0000, 16'hB38E);
+    check_mining("Mining: Target Maxim (Solutie imediata)", 16'h0000, 16'h7A59);
 
 
     // --- TEST 2: Cautare cu Target Specific (Dificultate Medie) ---
@@ -101,7 +101,7 @@ initial begin
     @ (negedge clk); // done like this for iverilog testing script
     // Valorile exp_nonce si exp_hash de mai jos sunt ipotetice pentru exemplificare
     // In simulare reala, le inlocuiesti cu cele calculate de algoritm
-    check_mining("Mining: Target 4000h (Dificultate Medie)", 16'h0001, 16'h37D9);
+    check_mining("Mining: Target 4000h (Dificultate Medie)", 16'h0001, 16'h376D);
 
 
     // --- TEST 3: Reluare din Nonce diferit ---
@@ -114,7 +114,7 @@ initial begin
     
     @(posedge done);
     @ (negedge clk); // done like this for iverilog testing script
-    check_mining("Mining: Start de la Nonce 00FFh", 16'h00FF, 16'h5D3C);
+    check_mining("Mining: Start de la Nonce 00FFh", 16'h00FF, 16'h3B76);
 
 
     // Raport Final de Simulare

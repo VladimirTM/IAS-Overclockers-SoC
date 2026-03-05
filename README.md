@@ -176,11 +176,11 @@ The CPU supports 54 instructions organized into the following categories:
 | `AND X/Y`   | A = A AND X/Y (bitwise)          |
 | `OR X/Y`    | A = A OR X/Y (bitwise)           |
 | `XOR X/Y`   | A = A XOR X/Y (bitwise)          |
-| `NOT X/Y`   | A = NOT X/Y (bitwise complement) |
+| `NOT X/Y`   | A = NOT A (bitwise complement of accumulator; operand is unused) |
 | `ANDI imm`  | A = A AND immediate              |
 | `ORI imm`   | A = A OR immediate               |
 | `XORI imm`  | A = A XOR immediate              |
-| `NOTI imm`  | A = NOT immediate                |
+| `NOTI imm`  | A = NOT A (bitwise complement of accumulator; immediate is unused) |
 
 ### Comparison & Test
 
@@ -952,4 +952,4 @@ For questions about this project or collaboration opportunities, please refer to
 
 **Last Updated**: March 2026
 **Project Status**: Completed and Validated (23 module testbenches, 480+ tests, all passing)
-**Version**: 2.2 (mining_core refactored to use rca/barrel_shifter/logic_unit sub-components; barrel_shifter RSR/RSL shift overflow fix; controlUnit idle port added)
+**Version**: 2.3 (mining_core refactored to use rca/barrel_shifter/logic_unit sub-components; barrel_shifter RSR/RSL shift overflow fix; controlUnit idle port added; testbench hash assertions strengthened; NOT/NOTI documentation corrected)

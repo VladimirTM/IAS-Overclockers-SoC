@@ -222,10 +222,10 @@ module cpu_tb;
         check_test("ORI 56", (A_out & 16'd56) == 16'd56);
 
         wait_for_pc(16'h002A, "XORI 21");
-        check_test("XORI 21: executed", 1);
+        check_test("XORI 21: A=42", A_out == 16'd42);
 
         wait_for_pc(16'h002B, "NOTI 0");
-        check_test("NOTI 0: executed", 1);
+        check_test("NOTI 0: A=FFD5", A_out == 16'hFFD5);
 
         wait_for_pc(16'h002C, "CMPI 100");
         check_test("CMPI 100: executed", 1);

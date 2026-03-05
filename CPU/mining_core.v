@@ -38,14 +38,15 @@ module mining_core (
     assign K[14] = 16'h9bdc;
     assign K[15] = 16'hc19b;
 
-    parameter [15:0] H0 = 16'h6a09;
-    parameter [15:0] H1 = 16'hbb67;
-    parameter [15:0] H2 = 16'h3c6e;
-    parameter [15:0] H3 = 16'ha54f;
-    parameter [15:0] H4 = 16'h510e;
-    parameter [15:0] H5 = 16'h9b05;
-    parameter [15:0] H6 = 16'h1f83;
-    parameter [15:0] H7 = 16'hd9ab;
+    // Initial hash values (SHA-256 H0-H7, truncated to 16 bits)
+    localparam [15:0] H0 = 16'h6a09;
+    localparam [15:0] H1 = 16'hbb67;
+    localparam [15:0] H2 = 16'h3c6e;
+    localparam [15:0] H3 = 16'ha54f;
+    localparam [15:0] H4 = 16'h510e;
+    localparam [15:0] H5 = 16'h9b05;
+    localparam [15:0] H6 = 16'h1f83;
+    localparam [15:0] H7 = 16'hd9ab;
 
     // =========================================================
     // W[0:15] initialization combinational network

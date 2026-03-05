@@ -12,12 +12,9 @@ module barrel_shifter (
     localparam RSR = 2'b10;
     localparam RSL = 2'b11;
 
-    // Normalized rotate amount: a 16-bit rotate by N equals rotate by N%16.
-    // shift_amount is 5-bit (0-31); subtracting 16 maps [16..31] -> [0..15].
-    // This prevents "16 - shift_amount" from underflowing to 0xFFFFFFFF when
-    // shift_amount > 16, which would make Verilog shift by a huge amount (-> 0).
-    reg [4:0] eff;
-    always @(*) eff = (shift_amount >= 5'd16) ? (shift_amount - 5'd16) : shift_amount;
+    // Rotate by N == rotate by N%16; shift_amount[3:0] gives this directly for 5-bit inputs.
+    wire [4:0] eff;
+    assign eff = {1'b0, shift_amount[3:0]};
 
     always @(*) begin
 

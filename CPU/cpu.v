@@ -1,4 +1,4 @@
-// CPU: 16-bit processor with mining support
+// CPU: 16-bit processor with MMIO and mining support
 module cpu (
     input clk,
     input rst_n,
@@ -8,7 +8,13 @@ module cpu (
     output [15:0] Y_out,
     output [15:0] dr_out,
     output [15:0] mem_out,
-    output mining_done
+    output mining_done,
+    // I/O peripheral ports
+    input         ext_irq,
+    input  [15:0] kbd_data_in,
+    input         kbd_strobe,
+    output [15:0] disp_data_out,
+    output        disp_we
 );
 
     wire [15:0] ar_out, ir_out;
@@ -39,13 +45,28 @@ module cpu (
 
     wire use_dr_for_a, use_movr_flags;
 
+    // I/O control signals from CU
+    wire io_we_cu, io_re, ivt_mode;
+
+    // MMIO routing: ar_out[10]=1 → I/O space, =0 → RAM
+    wire io_access    = ar_out[10];
+    wire mem_we_gated = memWR & ~io_access;           // suppress RAM write on I/O address
+    wire io_we_sig    = io_we_cu | (memWR & io_access);
+
+    // AR_EXT for condAR=2'b11: sets bit10=1 (I/O page), low 10 bits from IR operand
+    wire [15:0] ar_ext_in = {5'b00001, ir_out[9:0]};
+
+    // IRQ lines unused until interrupt_controller added (v3.1)
+    wire [15:0] io_data_out_w;
+    wire        kbd_irq_w, timer_irq_w, mining_irq_w;
+    wire [3:0]  ier_out_w;
+
+    // Source for flags in direct mode: MOVR uses IR register fields, INC/DEC use X/Y, else DR
     wire [15:0] direct_flag_value;
     assign direct_flag_value = use_movr_flags ?
                                (ir_out[7:6] == 2'b00 ? A_out :
                                 ir_out[7:6] == 2'b01 ? X_out : Y_out) :
-                               (use_xy_for_flags ?
-                                (regaddr ? Y_out : X_out) :
-                                dr_out);
+                               (use_xy_for_flags ? (regaddr ? Y_out : X_out) : dr_out);
 
     program_counter pc_inst (
         .clk(clk),
@@ -78,7 +99,7 @@ module cpu (
         .clk(clk),
         .addr(ar_out[9:0]),
         .data_in(dr_out),
-        .we(memWR),
+        .we(mem_we_gated),
         .data_out(mem_out)
     );
 
@@ -163,6 +184,7 @@ module cpu (
         .PC(pc_out),
         .SP(sp_out),
         .IMM({7'b0000000, ir_out[8:0]}),
+        .AR_EXT(ar_ext_in),
         .CondAR(condAR),
         .out(mux_ar_out)
     );
@@ -174,6 +196,11 @@ module cpu (
         .PC(pc_out),
         .IMM(imm_sign_extended),
         .A(A_out),
+        .io_data(io_data_out_w),
+        .flags_Z(Z_flag),
+        .flags_N(N_flag),
+        .flags_C(C_flag),
+        .flags_O(O_flag),
         .CondDR(condDR),
         .out(mux_dr_out)
     );
@@ -213,6 +240,27 @@ module cpu (
         .hash_out(mining_hash_out),
         .result_nonce(mining_result_nonce),
         .done(mining_done)
+    );
+
+    io_controller io_ctrl_inst (
+        .clk(clk),
+        .rst_n(rst_n),
+        .io_addr(ar_out[9:0]),
+        .io_data_in(dr_out),
+        .io_we(io_we_sig),
+        .io_re(io_re),
+        .io_data_out(io_data_out_w),
+        .kbd_data_in(kbd_data_in),
+        .kbd_strobe(kbd_strobe),
+        .disp_data_out(disp_data_out),
+        .disp_we(disp_we),
+        .mining_hash_in(mining_hash_out),
+        .mining_nonce_in(mining_result_nonce),
+        .mining_done_in(mining_done),
+        .kbd_irq(kbd_irq_w),
+        .timer_irq(timer_irq_w),
+        .mining_irq(mining_irq_w),
+        .ier_out(ier_out_w)
     );
 
     cu cu_inst (
@@ -256,7 +304,10 @@ module cpu (
         .use_mining_result(use_mining_result),
         .use_dr_for_a(use_dr_for_a),
         .use_movr_flags(use_movr_flags),
-        .finish(finish)
+        .finish(finish),
+        .io_we(io_we_cu),
+        .io_re(io_re),
+        .ivt_mode(ivt_mode)
     );
 
     reg halt_msg_printed;

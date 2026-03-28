@@ -1,6 +1,6 @@
 # IAS-Overclockers: 16-bit CPU with Cryptocurrency Mining
 
-> A 16-bit General Purpose Processor with ASIP (Application-Specific Instruction Set Processor) extension for cryptocurrency mining acceleration.
+> A 16-bit General Purpose Processor with ASIP (Application-Specific Instruction Set Processor) extension for cryptocurrency mining acceleration and Memory-Mapped I/O (MMIO) peripheral support.
 
 ---
 
@@ -20,6 +20,13 @@ At its core, the CPU features a complete 16-bit von Neumann architecture with 54
 - **BEQ, BNE**: Branch if equal / not equal (for equality comparisons)
 - **NOP**: No operation for timing and alignment
 
+**New I/O Extensions** (v3.0 — MMIO Foundation):
+
+- **IN port**: Read 16-bit value from memory-mapped I/O port into accumulator A
+- **OUT port**: Write accumulator A to memory-mapped I/O port
+- **Memory-Mapped I/O Controller**: Keyboard, display, timer, and mining-result peripherals accessible via addresses with bit 10 set (I/O space)
+- Port map: KBD_DATA (0), KBD_STATUS (1), DISP_DATA (16), TIMER_CTRL (32), TIMER_PERIOD (33), TIMER_COUNT (34), IER (48), IFR (49), MINE_HASH (64), MINE_NONCE (65)
+
 This project demonstrates advanced concepts in digital design, including CPU architecture, instruction set design, finite state machines, and hardware-software co-design through the integration of specialized acceleration cores.
 
 ---
@@ -27,13 +34,14 @@ This project demonstrates advanced concepts in digital design, including CPU arc
 ## Features
 
 - **16-bit General Purpose Processor** with von Neumann architecture
-- **54 Instructions**: 29 core operations + 24 new extensions + specialized MINE instruction (BEQ is alias for BRZ)
+- **56 Instructions**: 29 core operations + 24 extensions + MINE + **IN + OUT** (BEQ is alias for BRZ)
 - **Application-Specific Extension**: Cryptocurrency mining core with SHA-256-based hashing
+- **Memory-Mapped I/O**: Peripheral controller (keyboard, display, timer, mining result ports) accessed via `IN`/`OUT` instructions; bit 10 of address register selects I/O space vs RAM
 - **Complete Toolchain**:
   - Python-based assembler for assembly-to-machine-code translation (supports comma-separated operands)
   - Interactive memory initialization tool
   - Comprehensive testbench suite
-- **Robust Testing**: 23 module testbenches with 480+ test cases (all PASS)
+- **Robust Testing**: 24 module testbenches with 524 test cases (all PASS)
 - **Build Automation**: Makefile-based workflow with shell script wrappers
 - **Waveform Analysis**: VCD file generation for GTKWave debugging
 
@@ -64,10 +72,12 @@ The CPU provides a rich set of 16-bit registers for flexible programming:
 ### Core Components
 
 - **16-bit ALU**: Performs arithmetic, logic, shift, and rotate operations with flag generation
-- **Control Unit**: 72-state FSM (Finite State Machine) managing the fetch-decode-execute cycle
+- **Control Unit**: 78-state FSM (states 0–77) managing fetch-decode-execute; 6 new states for IN/OUT; states 78–97 reserved for interrupt system (see Roadmap)
 - **Unified Memory**: 1024 x 16-bit words (10-bit addressing) for instructions, data, and stack
+- **I/O Controller** (`io_controller.v`): Memory-mapped peripheral controller; keyboard latch with IRQ, display output with write-enable pulse, free-running timer with configurable period and periodic/one-shot mode, mining result latch; read path is fully combinational (mandatory for single-cycle `IN` instruction)
 - **Mining Core**: SHA-256-based hash computation engine for proof-of-work operations
 - **Sign Extend Unit**: Converts 9-bit signed immediates to 16-bit values
+- **Address Routing**: `ar_out[10] = 0` → RAM; `ar_out[10] = 1` → I/O controller (the `AR_EXT` mux input, `CondAR = 2'b11`, is used by `IN`/`OUT` and will be reused for IVT access during interrupt handling)
 
 ### Instruction Format
 
@@ -202,6 +212,35 @@ The CPU supports 54 instructions organized into the following categories:
 | `MOVR X, Y` | Copy Y register to X register (X = Y)  |
 | `MOVR Y, A` | Copy Accumulator to Y register (Y = A) |
 | `MOVR Y, X` | Copy X register to Y register (Y = X)  |
+
+### I/O Operations (v3.0)
+
+| Instruction  | Opcode   | Description                                                       |
+| ------------ | -------- | ----------------------------------------------------------------- |
+| `IN port`    | `100110` | A ← mem-mapped I/O port (10-bit port address, 0–1023)             |
+| `OUT port`   | `100111` | I/O port ← A (10-bit port address, 0–1023)                        |
+
+**Instruction encoding** (both use full 10-bit port address in `[9:0]`):
+```
+IN  port : [15:10]=100110 | [9:0]=port_address
+OUT port : [15:10]=100111 | [9:0]=port_address
+```
+
+**I/O Port Map:**
+
+| Port | Hex   | R/W | Name         | Description                                         |
+|------|-------|-----|--------------|-----------------------------------------------------|
+| 0    | 0x000 | R   | KBD_DATA     | Keyboard ASCII; read clears latch and kbd_irq       |
+| 1    | 0x001 | R   | KBD_STATUS   | bit 0 = data ready                                  |
+| 16   | 0x010 | W   | DISP_DATA    | Display character output (disp_we pulse)            |
+| 17   | 0x011 | R   | DISP_STATUS  | Always 0 (display never busy)                       |
+| 32   | 0x020 | R/W | TIMER_CTRL   | bit 0 = enable, bit 1 = periodic                    |
+| 33   | 0x021 | R/W | TIMER_PERIOD | Timer reload value; write also resets counter       |
+| 34   | 0x022 | R   | TIMER_COUNT  | Current counter value                               |
+| 48   | 0x030 | R/W | IER          | Interrupt Enable Register (4-bit)                   |
+| 49   | 0x031 | R   | IFR          | Interrupt Flag Register `[2:mining, 1:kbd, 0:timer]`|
+| 64   | 0x040 | R   | MINE_HASH    | Latched mining hash; read clears mining_irq         |
+| 65   | 0x041 | R   | MINE_NONCE   | Latched mining nonce                                |
 
 ### ASIP Extension
 
@@ -536,8 +575,9 @@ END                   ; Halt CPU execution
 ```
 IAS-Overclockers/
 ├── CPU/                          # Core processor Verilog modules
-│   ├── cpu.v                    # Top-level CPU integration module
-│   ├── cu.v                     # Control Unit (72-state FSM)
+│   ├── cpu.v                    # Top-level CPU integration module (MMIO routing added)
+│   ├── cu.v                     # Control Unit (78-state FSM; IN/OUT states 72-77)
+│   ├── io_controller.v          # [NEW v3.0] Memory-mapped I/O peripheral controller
 │   ├── alu.v                    # 16-bit Arithmetic Logic Unit
 │   ├── mining_core.v            # SHA-256 cryptocurrency mining core
 │   ├── memory.v                 # Unified instruction/data memory (1024 words)
@@ -550,8 +590,8 @@ IAS-Overclockers/
 │   ├── data_register.v          # Data Register (DR)
 │   ├── instruction_register.v   # Instruction Register (IR)
 │   ├── seu.v                    # Sign Extend Unit (9-bit → 16-bit)
-│   ├── mux_ar.v                 # Address Register multiplexer
-│   ├── mux_dr.v                 # Data Register multiplexer
+│   ├── mux_ar.v                 # Address Register mux (+ AR_EXT input for I/O/IVT)
+│   ├── mux_dr.v                 # Data Register mux (+ io_data and packed-flags inputs)
 │   ├── mux_alu.v                # ALU operand multiplexer
 │   └── ...                      # Additional support modules
 │
@@ -561,13 +601,16 @@ IAS-Overclockers/
 │   └── ...                      # Assembler utilities
 │
 ├── Module-Testing/               # Component-level testbenches
-│   ├── cpu_tb.v                 # Comprehensive 105-test CPU validation
+│   ├── cpu_tb.v                 # Comprehensive CPU validation
 │   ├── alu_tb.v                 # ALU unit tests
 │   ├── memory_tb.v              # Memory module tests
 │   ├── accumulator_tb.v         # Accumulator register tests
+│   ├── io_controller_tb.v       # [NEW v3.0] I/O controller tests (34 tests)
+│   ├── mux_ar_tb.v              # Address mux tests (updated: AR_EXT routing, 8 tests)
+│   ├── mux_dr_tb.v              # Data mux tests (updated: io_data/flags paths, 14 tests)
 │   ├── register_x_tb.v          # X register tests
 │   ├── register_y_tb.v          # Y register tests
-│   ├── data_register_tb.v       # Data register tests
+│   ├── data_register_tb.v       # Data register + mux_dr integration tests
 │   └── ...                      # Additional component tests
 │
 ├── cpu_tb.v                      # Simple register dump testbench (root level)
@@ -601,44 +644,45 @@ IAS-Overclockers/
 
 The project includes comprehensive testing at multiple levels:
 
-**Component Testing (23 Module Testbenches):**
+**Component Testing (24 Module Testbenches):**
 
 - Individual modules tested in isolation (Module-Testing/ directory)
 - Automated test runner script: `run_all_testbenches.sh`
-- Tests for all CPU components: ALU, registers, memory, control unit, muxes, etc.
+- Tests for all CPU components: ALU, registers, memory, control unit, muxes, I/O controller, etc.
 
-**Integrated CPU Testing (105 Tests):**
+**Integrated CPU Testing:**
 
-- Comprehensive testbench validates all 54 instructions
-- Tests include: memory operations, ALU, branches (including BEQ/BNE), stack operations
-- All 105 tests pass
+- Comprehensive testbench validates all instructions including new I/O extensions
+- Tests include: memory operations, ALU, branches (including BEQ/BNE), stack operations, I/O controller peripheral paths
 
 **Module Test Summary:**
-| Module | Tests | Status |
-|--------|-------|--------|
-| alu_negative_test_tb.v | 24 | ✓ PASS |
-| accumulator_tb.v | 10 | ✓ PASS |
-| alu_tb.v | 46 | ✓ PASS |
-| ar_tb.v | 14 | ✓ PASS |
-| cu_tb.v | 251 | ✓ PASS |
-| data_register_tb.v | 26 | ✓ PASS |
-| flags_tb.v | 9 | ✓ PASS |
-| ir_tb.v | 6 | ✓ PASS |
-| memory_tb.v | 8 | ✓ PASS |
-| mining_core_tb.v | 3 | ✓ PASS |
-| mux_alu_tb.v | 6 | ✓ PASS |
-| mux_ar_tb.v | 5 | ✓ PASS |
-| mux_dr_tb.v | 7 | ✓ PASS |
-| mux_pc_tb.v | 5 | ✓ PASS |
-| opcode_decoder_tb.v | 7 | ✓ PASS |
-| program_counter_tb.v | 7 | ✓ PASS |
-| rca_tb.v | 6 | ✓ PASS |
-| rcas_tb.v | 6 | ✓ PASS |
-| register_x_tb.v | 7 | ✓ PASS |
-| register_y_tb.v | 7 | ✓ PASS |
-| rgst_tb.v | 7 | ✓ PASS |
-| seu_tb.v | 6 | ✓ PASS |
-| stack_pointer_tb.v | 7 | ✓ PASS |
+| Module | Tests | Status | Notes |
+|--------|-------|--------|-------|
+| alu_negative_test_tb.v | 24 | ✓ PASS | |
+| accumulator_tb.v | 10 | ✓ PASS | |
+| alu_tb.v | 46 | ✓ PASS | |
+| ar_tb.v | 14 | ✓ PASS | Updated: AR_EXT port added |
+| cu_tb.v | 251 | ✓ PASS | |
+| data_register_tb.v | 26 | ✓ PASS | Updated: io_data/flags ports added |
+| flags_tb.v | 9 | ✓ PASS | |
+| io_controller_tb.v | 34 | ✓ PASS | **NEW v3.0**: kbd, display, timer, mining, IER/IFR |
+| ir_tb.v | 6 | ✓ PASS | |
+| memory_tb.v | 8 | ✓ PASS | |
+| mining_core_tb.v | 3 | ✓ PASS | |
+| mux_alu_tb.v | 6 | ✓ PASS | |
+| mux_ar_tb.v | 8 | ✓ PASS | Updated: AR_EXT routing tests added |
+| mux_dr_tb.v | 14 | ✓ PASS | Updated: io_data + packed FLAGS path tests |
+| mux_pc_tb.v | 5 | ✓ PASS | |
+| opcode_decoder_tb.v | 7 | ✓ PASS | |
+| program_counter_tb.v | 7 | ✓ PASS | |
+| rca_tb.v | 6 | ✓ PASS | |
+| rcas_tb.v | 6 | ✓ PASS | |
+| register_x_tb.v | 7 | ✓ PASS | |
+| register_y_tb.v | 7 | ✓ PASS | |
+| rgst_tb.v | 7 | ✓ PASS | |
+| seu_tb.v | 6 | ✓ PASS | |
+| stack_pointer_tb.v | 7 | ✓ PASS | |
+| **Total** | **524** | **✓ PASS** | 24 testbenches, 0 failures |
 
 **Control Unit Testing (cu_tb.v):**
 
@@ -654,7 +698,7 @@ The project includes comprehensive testing at multiple levels:
 
 ### Running Module Tests
 
-Run all 23 module testbenches (including `alu_negative_test_tb.v`):
+Run all 24 module testbenches (including `alu_negative_test_tb.v` and the new `io_controller_tb.v`):
 
 ```bash
 cd Module-Testing && bash run_all_testbenches.sh
@@ -727,10 +771,27 @@ This project was developed as a collaborative team effort for the FIC course, de
    - Mining testbench validation
 
 3. ✅ **Testing and Validation**
-   - Comprehensive 105-test suite
+   - Comprehensive test suite (24 module testbenches, 524 tests)
    - All instruction categories validated
    - Build automation and toolchain
    - Documentation
+
+4. ✅ **Memory-Mapped I/O Foundation (v3.0)**
+   - `io_controller.v`: keyboard, display, timer, mining-result peripherals
+   - `IN` / `OUT` instructions (opcodes 38/39, 6 new FSM states 72–77)
+   - `ar_out[10]` routing: RAM vs I/O space; `mem_we_gated` prevents spurious RAM writes
+   - `mux_ar` AR_EXT path (`CondAR=2'b11`) for I/O page and future IVT access
+   - `mux_dr` io_data path (`CondDR=3'b110`) and packed-FLAGS path (`CondDR=3'b111`)
+   - Assembler support for `IN port` / `OUT port`
+   - 34-test `io_controller_tb.v` covering all peripherals
+   - Zero regressions across all 524 tests
+
+5. 🔄 **Interrupt System (v3.1 — In Progress)**
+   - `interrupt_controller.v` (pending)
+   - EI / DI / IRET / WAIT instructions (pending)
+   - CU states 78–97 for interrupt save/restore/return (pending)
+   - `flags.v` `use_packed_flags` path (pending)
+   - IVT at addresses 190–193 (pending)
 
 ---
 
@@ -756,17 +817,20 @@ The CPU uses a 72-state Finite State Machine (FSM) in the control unit to manage
 
 **State Machine Details:**
 
-- 72 distinct states handle all instruction types
-  - 47 original states
+- 78 active states (0–77) with states 78–97 reserved for the interrupt system (see Roadmap)
+  - 47 original states (fetch, decode, ALU, memory, branches, stack)
   - 3 for signed division (D_PRE1/D_PRE2, D_POST)
   - 12 for conditional branches (MOVR_1/MOVR_2, NOP_1, BGT/BLT/BGE/BLE with CHECK/TAKE/SKIP)
   - 7 for stack operations (PUSH_REG_1/2/3, POP_REG_1/2/3/4)
   - 3 for BNE instruction (BNE_CHECK/TAKE/SKIP)
+  - **6 new (v3.0)**: IN_1/IN_2/IN_3 (states 72–74) for `IN` instruction; OUT_1/OUT_2/OUT_3 (states 75–77) for `OUT` instruction
 - Conditional branches evaluate flags and update PC accordingly
 - BEQ uses same states as BRZ (alias), BNE has dedicated states
 - Stack operations coordinate SP updates with memory access
 - Division states: D_PRE1/D_PRE2 extract signs, D0-D10 perform SRT4, D_POST applies sign
 - JMP reuses PUSH_1/2/3 states but adds branch in PUSH_3
+- **IN** instruction: IN_1 loads AR with I/O page address → IN_2 asserts `io_re` and latches `io_data_out` into DR → IN_3 loads A from DR
+- **OUT** instruction: OUT_1 loads AR with I/O page address → OUT_2 loads DR from A → OUT_3 asserts `io_we`
 
 ### Memory Organization
 
@@ -869,9 +933,10 @@ These are intentional design choices for the educational scope of the project:
    - Not suitable for production cryptocurrency mining
    - Demonstrates ASIP concepts effectively
 
-4. **No Interrupt Support**: Sequential execution only
-   - No interrupt controller or exception handling
-   - All operations run to completion
+4. **Interrupt System Incomplete** (in progress — see Roadmap)
+   - `io_controller.v` exposes `kbd_irq`, `timer_irq`, `mining_irq` outputs but the interrupt controller and CU states are not yet wired
+   - `EI`, `DI`, `IRET`, `WAIT` instructions not yet implemented
+   - Programs currently run to completion without asynchronous interruption
 
 5. **No Pipelining**: Simple fetch-decode-execute cycle
    - Instructions execute sequentially (not in parallel)
@@ -884,6 +949,59 @@ These are intentional design choices for the educational scope of the project:
 
 ---
 
+## Roadmap — Interrupt System (v3.1, In Progress)
+
+The MMIO foundation is complete. The next phase implements the full interrupt system as specified in `IO_Implementare_Plan.md`. All infrastructure is already in place (I/O controller IRQ outputs, `AR_EXT` mux, `mux_dr` packed-flags case, `ivt_mode` wire).
+
+### What Remains
+
+**New modules:**
+
+| File | Purpose |
+|------|---------|
+| `CPU/interrupt_controller.v` | 4-source priority encoder (TIMER > KBD > MINE > EXT); masks against IER and I_flag; clears winning source on `intr_ack` |
+
+**Modified files:**
+
+| File | Change Needed |
+|------|--------------|
+| `CPU/flags.v` | Add `use_packed_flags` input — on IRET restore, unpack `direct_value[15:12]` as `{Z,N,C,O}` |
+| `CPU/cu.v` | Add 20 new states (78–97): `INTR_CHECK`, `INTR_SAVE_1..6`, `INTR_VECTOR`, `INTR_JUMP_1/2`, `IRET_1..7`, `EI_1`, `DI_1`, `WAIT_1`; add `I_flag` register; add `OP_EI/OP_DI/OP_IRET/OP_WAIT` opcodes; change `LOAD_INSTR → INTR_CHECK` (was `→ DECODE`) |
+| `CPU/cpu.v` | Wire `interrupt_controller`; connect `irq_id` to `ar_ext_in` when `ivt_mode=1` (`ar_ext_in = 16'd190 + {14'b0, irq_id}`); expose `ext_irq` input |
+| `CPU-Assembler/main.py` | Add `EI`(40), `DI`(41), `IRET`(58), `WAIT`(59) opcodes (all zero-operand) |
+
+**Interrupt Vector Table (IVT):**
+
+Pre-loaded at addresses 190–193 (just below data region at 200):
+
+| Address | Source | Content |
+|---------|--------|---------|
+| 190 | TIMER | Address of TIMER ISR |
+| 191 | KBD   | Address of KBD ISR   |
+| 192 | MINE  | Address of MINE ISR  |
+| 193 | EXT   | Address of EXT ISR   |
+
+**New instructions:**
+
+| Mnemonic | Opcode   | Description |
+|----------|----------|-------------|
+| `EI`     | `101000` | Enable interrupts (`I_flag = 1`) |
+| `DI`     | `101001` | Disable interrupts (`I_flag = 0`) |
+| `IRET`   | `111010` | Return from interrupt (pop PC then FLAGS, re-enable interrupts) |
+| `WAIT`   | `111011` | Halt CPU until interrupt fires (ARM WFI equivalent) |
+
+**Context save/restore on interrupt:**
+
+Automatically pushes FLAGS then PC onto stack on entry; `IRET` pops PC then FLAGS. FLAGS are packed as `{Z,N,C,O,12'b0}` in a 16-bit word. `I_flag` is cleared on interrupt entry and restored on `IRET`.
+
+**New testbenches needed:**
+
+- `Module-Testing/interrupt_controller_tb.v` — 4-source priority, IER masking, intr_ack
+- `Module-Testing/cu_interrupt_tb.v` — all 20 new states (78–97), WAIT loop behavior
+- `Demo-Programs/io_interrupt_demo.asm` — EI + WAIT + ISR that reads kbd/mining results
+
+---
+
 ## Future Enhancements
 
 Potential improvements for extended learning or follow-on projects:
@@ -892,7 +1010,6 @@ Potential improvements for extended learning or follow-on projects:
 
 - [ ] Expand program memory capacity (support longer programs)
 - [ ] Implement pipelined architecture (3-5 stage pipeline)
-- [ ] Add interrupt controller for asynchronous events
 - [ ] Dual-port memory for simultaneous instruction fetch and data access
 - [ ] Cache memory for improved performance
 
@@ -951,5 +1068,5 @@ For questions about this project or collaboration opportunities, please refer to
 ---
 
 **Last Updated**: March 2026
-**Project Status**: Completed and Validated (23 module testbenches, 480+ tests, all passing)
-**Version**: 2.3 (mining_core refactored to use rca/barrel_shifter/logic_unit sub-components; barrel_shifter RSR/RSL shift overflow fix; controlUnit idle port added; testbench hash assertions strengthened; NOT/NOTI documentation corrected)
+**Project Status**: Active Development — MMIO complete, Interrupt System in progress
+**Version**: 3.0 (Memory-Mapped I/O foundation: io_controller, IN/OUT instructions, mux_ar AR_EXT path, mux_dr io_data + packed-flags paths, 6 new CU states 72–77, assembler IN/OUT encoding, 34-test io_controller_tb; 24 module testbenches, 524 tests, all passing)

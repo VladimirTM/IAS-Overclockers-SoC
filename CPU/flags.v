@@ -1,4 +1,5 @@
-// Flags Register: Z(zero), N(negative), C(carry), O(overflow)
+// Flags Register — Z/N/C/O condition codes
+// use_direct_value=0: all four flags from ALU; =1: Z/N from direct_value word, C/O cleared
 module flags (
     input clk,
     input rst_n,
@@ -25,7 +26,7 @@ module flags (
         else if (ldFLAG) begin
             if (use_direct_value) begin
                 Z <= (direct_value == 16'h0000);
-                N <= direct_value[15];
+                N <= direct_value[15];  // sign bit
                 C <= 0;
                 O <= 0;
             end else begin

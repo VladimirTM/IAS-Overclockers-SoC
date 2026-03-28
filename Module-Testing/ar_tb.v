@@ -11,9 +11,10 @@ module address_register_tb;
     reg [15:0] PC;
     reg [15:0] SP;
     reg [15:0] IMM;
+    reg [15:0] AR_EXT;
     reg [1:0] CondAR;
     wire [15:0] mux_out;
-    
+
     address_register uut_ar (
         .clk(clk),
         .rst_n(rst_n),
@@ -21,11 +22,12 @@ module address_register_tb;
         .in_address(in_address),
         .out_address(out_address)
     );
-    
+
     mux_ar uut_mux (
         .PC(PC),
         .SP(SP),
         .IMM(IMM),
+        .AR_EXT(AR_EXT),
         .CondAR(CondAR),
         .out(mux_out)
     );
@@ -86,12 +88,13 @@ module address_register_tb;
         rst_n = 1;
         ldAR = 0;
         in_address = 0;
-        
+
         // Valori de test pentru intrarile MUX
-        PC  = 16'hAAAA; // Valoare test PC
-        SP  = 16'hBBBB; // Valoare test SP
-        IMM = 16'hCCCC; // Valoare test IMM
-        
+        PC     = 16'hAAAA; // Valoare test PC
+        SP     = 16'hBBBB; // Valoare test SP
+        IMM    = 16'hCCCC; // Valoare test IMM
+        AR_EXT = 16'h0000; // I/O / IVT address (0 in unit tests)
+
         CondAR = 2'b00;
         
         /*
@@ -150,7 +153,7 @@ module address_register_tb;
         
         CondAR = 2'b11;
         #1;
-        check_test_MUX("CondAR=11 (defaultCase): mux_out = 0000", 16'h0000);
+        check_test_MUX("CondAR=11 (AR_EXT=0): mux_out = 0000", 16'h0000);
 
         
         /*
@@ -186,7 +189,7 @@ module address_register_tb;
         #1;
         in_address = mux_out;
         @ (negedge clk);
-        check_test("Selected defaultCase -> out_address = 16'h0000", 16'h0000);
+        check_test("Selected AR_EXT=0 -> out_address = 16'h0000", 16'h0000);
 
 
         /*

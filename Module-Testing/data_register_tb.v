@@ -12,11 +12,11 @@ module data_register_tb;
     reg [15:0] X;
     reg [15:0] Y;
     reg [15:0] PC;
-    reg [15 : 0] IMM;
-    reg [15 : 0] A;
-    reg [2:0] CondDR;
+    reg [15:0] IMM;
+    reg [15:0] A;
+    reg [2:0]  CondDR;
     wire [15:0] mux_out;
-    
+
     data_register uut_dr (
         .ldDR(ldDR),
         .clk(clk),
@@ -24,14 +24,19 @@ module data_register_tb;
         .DR_in(DR_in),
         .DR_out(DR_out)
     );
-    
+
     mux_dr uut_mux (
         .mem(mem),
         .X(X),
         .Y(Y),
         .PC(PC),
-        .IMM (IMM),
-        .A (A),
+        .IMM(IMM),
+        .A(A),
+        .io_data(16'h0000),
+        .flags_Z(1'b0),
+        .flags_N(1'b0),
+        .flags_C(1'b0),
+        .flags_O(1'b0),
         .CondDR(CondDR),
         .out(mux_out)
     );
@@ -201,12 +206,12 @@ endtask
         CondDR = 3'b110;
         #1;
         
-        check_test_MUX("CondDR=110 (defaultCase): mux_out = 16'h0000", 16'h0000);
-        
+        check_test_MUX("CondDR=110 (io_data=0): mux_out = 16'h0000", 16'h0000);
+
         CondDR = 3'b111;
         #1;
-        
-        check_test_MUX("CondDR=111 (defaultCase): mux_out = 16'h0000", 16'h0000);
+
+        check_test_MUX("CondDR=111 (flags=0): mux_out = 16'h0000", 16'h0000);
         
         /*
         ========================================
@@ -262,14 +267,14 @@ endtask
         #1;
         DR_in = mux_out;
         @ (negedge clk);
-        check_test("Selected defaultCase -> DR_out = 16'h0000", 16'h0000);
-        
+        check_test("Selected io_data=0 (110) -> DR_out = 16'h0000", 16'h0000);
+
         @ (negedge clk);
         CondDR = 3'b111;
         #1;
         DR_in = mux_out;
         @ (negedge clk);
-        check_test("Selected defaultCase -> DR_out = 16'h0000", 16'h0000);
+        check_test("Selected flags=0 (111) -> DR_out = 16'h0000", 16'h0000);
         
         /*
         ========================================

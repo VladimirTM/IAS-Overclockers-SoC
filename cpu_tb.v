@@ -11,6 +11,8 @@ module cpu_tb;
     // CPU output wires
     wire [15:0] pc_out, A_out, X_out, Y_out, dr_out, mem_out;
     wire mining_done;
+    wire [15:0] disp_data_out;
+    wire disp_we;
 
     // Instantiate CPU
     cpu dut (
@@ -22,7 +24,12 @@ module cpu_tb;
         .Y_out(Y_out),
         .dr_out(dr_out),
         .mem_out(mem_out),
-        .mining_done(mining_done)
+        .mining_done(mining_done),
+        .ext_irq(1'b0),
+        .kbd_data_in(16'h0000),
+        .kbd_strobe(1'b0),
+        .disp_data_out(disp_data_out),
+        .disp_we(disp_we)
     );
 
     // Clock generation: 10ns period (100MHz)

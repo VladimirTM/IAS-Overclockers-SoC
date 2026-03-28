@@ -1,4 +1,4 @@
-// Control Unit: FSM managing instruction execution
+// Control Unit: FSM — LOAD_ADDR → LOAD_INSTR → DECODE → (execute) → LOAD_ADDR
 module cu (
     input clk,
     input rst_n,
@@ -40,49 +40,80 @@ module cu (
     output reg use_mining_result,
     output reg use_dr_for_a,
     output reg use_movr_flags,
-    output reg finish
+    output reg finish,
+    // I/O control signals
+    output reg io_we,
+    output reg io_re,
+    output reg ivt_mode
 );
 
+    // ---- Opcodes (6-bit) ----
+    // Control / memory
     localparam OP_HALT  = 6'b000000, OP_LOAD  = 6'b000001, OP_STORE = 6'b000010;
+    localparam OP_PUSH  = 6'b001000, OP_RET   = 6'b001001;
+    localparam OP_MOV   = 6'b011001, OP_MOVI  = 6'b111001;
+    localparam OP_NOP   = 6'b100010;
+    localparam OP_PUSH_REG = 6'b100011, OP_POP_REG = 6'b100100;
+    localparam OP_MOVR  = 6'b011101;
+    // Branch (register-operand forms)
     localparam OP_BRA   = 6'b000011, OP_BRZ   = 6'b000100, OP_BRN   = 6'b000101;
-    localparam OP_BRC   = 6'b000110, OP_BRO   = 6'b000111, OP_PUSH  = 6'b001000, OP_RET   = 6'b001001;
+    localparam OP_BRC   = 6'b000110, OP_BRO   = 6'b000111;
+    localparam OP_BGT   = 6'b011110, OP_BLT   = 6'b011111;
+    localparam OP_BGE   = 6'b100000, OP_BLE   = 6'b100001, OP_BNE   = 6'b100101;
+    // ALU register (opcode[5]==0) / immediate (opcode[5]==1)
     localparam OP_ADD   = 6'b001010, OP_SUB   = 6'b001011, OP_MUL   = 6'b001100, OP_DIV   = 6'b001101;
     localparam OP_MOD   = 6'b001110, OP_LSL   = 6'b001111, OP_LSR   = 6'b010000, OP_RSR   = 6'b010001;
     localparam OP_RSL   = 6'b010010, OP_AND   = 6'b010011, OP_OR    = 6'b010100, OP_XOR   = 6'b010101;
-    localparam OP_NOT   = 6'b010110, OP_CMP   = 6'b010111, OP_TST   = 6'b011000, OP_MOV   = 6'b011001;
-    localparam OP_INC   = 6'b011010, OP_DEC   = 6'b011011, OP_MINE  = 6'b011100;
-    localparam OP_MOVR  = 6'b011101, OP_BGT   = 6'b011110, OP_BLT   = 6'b011111;
-    localparam OP_BGE   = 6'b100000, OP_BLE   = 6'b100001, OP_NOP   = 6'b100010;
+    localparam OP_NOT   = 6'b010110, OP_CMP   = 6'b010111, OP_TST   = 6'b011000;
+    localparam OP_INC   = 6'b011010, OP_DEC   = 6'b011011;
     localparam OP_ADDI  = 6'b101010, OP_SUBI  = 6'b101011, OP_MULI  = 6'b101100, OP_DIVI  = 6'b101101;
     localparam OP_MODI  = 6'b101110, OP_LSLI  = 6'b101111, OP_LSRI  = 6'b110000, OP_RSRI  = 6'b110001;
     localparam OP_RSLI  = 6'b110010, OP_ANDI  = 6'b110011, OP_ORI   = 6'b110100, OP_XORI  = 6'b110101;
-    localparam OP_NOTI  = 6'b110110, OP_CMPI  = 6'b110111, OP_TSTI  = 6'b111000, OP_MOVI  = 6'b111001;
-    localparam OP_PUSH_REG = 6'b100011, OP_POP_REG = 6'b100100;
-    localparam OP_BNE = 6'b100101;  // 37 decimal - Branch if Not Equal (Z==0)
+    localparam OP_NOTI  = 6'b110110, OP_CMPI  = 6'b110111, OP_TSTI  = 6'b111000;
+    // Mining accelerator
+    localparam OP_MINE  = 6'b011100;
+    // I/O instructions (v3.0)
+    localparam OP_IN    = 6'b100110;  // Read I/O port → A
+    localparam OP_OUT   = 6'b100111;  // Write A → I/O port
 
+    // ---- FSM State Encoding ----
+    // ---- Fetch / Decode ----
     localparam LOAD_ADDR = 0, LOAD_INSTR = 1, DECODE = 2, HALT_STATE = 3;
+    // ---- Memory: LOAD / STORE ----
     localparam LOAD_1 = 4, LOAD_2 = 5, LOAD_3 = 6;
     localparam STORE_1 = 7, STORE_2 = 8, STORE_3 = 9;
+    // ---- Branches ----
     localparam BRA_1 = 10;
-    localparam BRZ_CHECK = 11, BRZ_TAKE = 12, BRZ_SKIP = 13;
-    localparam BRN_CHECK = 14, BRN_TAKE = 15, BRN_SKIP = 16;
-    localparam BRC_CHECK = 17, BRC_TAKE = 18, BRC_SKIP = 19;
-    localparam BRO_CHECK = 20, BRO_TAKE = 21, BRO_SKIP = 22;
-    localparam PUSH_1 = 23, PUSH_2 = 24, PUSH_3 = 25;
+    localparam BRZ_CHECK = 11, BRZ_TAKE = 12, BRZ_SKIP = 13;  // branch if Z
+    localparam BRN_CHECK = 14, BRN_TAKE = 15, BRN_SKIP = 16;  // branch if N
+    localparam BRC_CHECK = 17, BRC_TAKE = 18, BRC_SKIP = 19;  // branch if C
+    localparam BRO_CHECK = 20, BRO_TAKE = 21, BRO_SKIP = 22;  // branch if O
+    localparam BGT_CHECK = 50, BGT_TAKE = 51, BGT_SKIP = 52;  // branch if ~Z & (N==O)
+    localparam BLT_CHECK = 53, BLT_TAKE = 54, BLT_SKIP = 55;  // branch if N!=O
+    localparam BGE_CHECK = 56, BGE_TAKE = 57, BGE_SKIP = 58;  // branch if N==O
+    localparam BLE_CHECK = 59, BLE_TAKE = 60, BLE_SKIP = 61;  // branch if Z | (N!=O)
+    localparam BNE_CHECK = 69, BNE_TAKE = 70, BNE_SKIP = 71;  // branch if ~Z
+    // ---- Stack / CALL / RET ----
+    localparam PUSH_1 = 23, PUSH_2 = 24, PUSH_3 = 25;         // PUSH A (saves PC)
     localparam RET_1 = 26, RET_2 = 27, RET_3 = 28, RET_4 = 29, RET_5 = 30;
-    localparam ALU_LOAD_OP1 = 31, ALU_LOAD_OP2 = 32, ALU_LOAD_OPC = 33;
-    localparam ALU_WAIT = 34, ALU_GET_RESULT = 35, ALU_GET_FLAGS_ONLY = 36;
-    localparam MOV_1 = 37, MOV_2 = 38, MOVI_1 = 39;
-    localparam INC_1 = 40, INC_2 = 41, DEC_1 = 42, DEC_2 = 43;
-    localparam MINE_START = 44, MINE_WAIT = 45, MINE_GET_RESULT = 46;
-    localparam MOVR_1 = 47, MOVR_2 = 48, NOP_1 = 49;
-    localparam BGT_CHECK = 50, BGT_TAKE = 51, BGT_SKIP = 52;
-    localparam BLT_CHECK = 53, BLT_TAKE = 54, BLT_SKIP = 55;
-    localparam BGE_CHECK = 56, BGE_TAKE = 57, BGE_SKIP = 58;
-    localparam BLE_CHECK = 59, BLE_TAKE = 60, BLE_SKIP = 61;
-    localparam PUSH_REG_1 = 62, PUSH_REG_2 = 63, PUSH_REG_3 = 64;
+    localparam PUSH_REG_1 = 62, PUSH_REG_2 = 63, PUSH_REG_3 = 64; // PUSH X/Y
     localparam POP_REG_1 = 65, POP_REG_2 = 66, POP_REG_3 = 67, POP_REG_4 = 68;
-    localparam BNE_CHECK = 69, BNE_TAKE = 70, BNE_SKIP = 71;
+    // ---- ALU operations ----
+    localparam ALU_LOAD_OPC = 33, ALU_LOAD_OP1 = 31, ALU_LOAD_OP2 = 32; // load opcode then operands
+    localparam ALU_WAIT = 34, ALU_GET_RESULT = 35, ALU_GET_FLAGS_ONLY = 36;
+    // ---- Register operations ----
+    localparam MOV_1 = 37, MOV_2 = 38;   // MOV X/Y ← IMM (updates flags)
+    localparam MOVI_1 = 39;              // MOVI A ← sign-extended immediate
+    localparam INC_1 = 40, INC_2 = 41;  // INC X/Y
+    localparam DEC_1 = 42, DEC_2 = 43;  // DEC X/Y
+    localparam MOVR_1 = 47, MOVR_2 = 48;// MOVR register-to-register
+    localparam NOP_1 = 49;
+    // ---- Mining accelerator ----
+    localparam MINE_START = 44, MINE_WAIT = 45, MINE_GET_RESULT = 46;
+    // ---- I/O (v3.0) ----
+    localparam IN_1  = 72, IN_2  = 73, IN_3  = 74;   // IN:  AR←port, DR←io_data, A←DR
+    localparam OUT_1 = 75, OUT_2 = 76, OUT_3 = 77;   // OUT: AR←port, DR←A, io_we
+    // States 78–97 reserved for interrupt system (v3.1)
 
     reg [6:0] state, next_state;
 
@@ -144,6 +175,8 @@ module cu (
                     OP_PUSH_REG: next_state = PUSH_REG_1;
                     OP_POP_REG:  next_state = POP_REG_1;
                     OP_BNE:   next_state = BNE_CHECK;
+                    OP_IN:    next_state = IN_1;
+                    OP_OUT:   next_state = OUT_1;
 
                     default:  next_state = LOAD_ADDR;
                 endcase
@@ -249,7 +282,7 @@ module cu (
             NOP_1:    next_state = LOAD_ADDR;
 
             BGT_CHECK: begin
-                if (~Z & (N == O))
+                if (~Z & (N == O))  // signed >: not zero, no overflow
                     next_state = BGT_TAKE;
                 else
                     next_state = BGT_SKIP;
@@ -258,7 +291,7 @@ module cu (
             BGT_SKIP: next_state = LOAD_ADDR;
 
             BLT_CHECK: begin
-                if (N != O)
+                if (N != O)  // signed <: N XOR O
                     next_state = BLT_TAKE;
                 else
                     next_state = BLT_SKIP;
@@ -267,7 +300,7 @@ module cu (
             BLT_SKIP: next_state = LOAD_ADDR;
 
             BGE_CHECK: begin
-                if (N == O)
+                if (N == O)  // signed >=
                     next_state = BGE_TAKE;
                 else
                     next_state = BGE_SKIP;
@@ -276,7 +309,7 @@ module cu (
             BGE_SKIP: next_state = LOAD_ADDR;
 
             BLE_CHECK: begin
-                if (Z | (N != O))
+                if (Z | (N != O))  // signed <=
                     next_state = BLE_TAKE;
                 else
                     next_state = BLE_SKIP;
@@ -302,9 +335,20 @@ module cu (
             BNE_TAKE: next_state = LOAD_ADDR;
             BNE_SKIP: next_state = LOAD_ADDR;
 
+            IN_1:  next_state = IN_2;
+            IN_2:  next_state = IN_3;
+            IN_3:  next_state = LOAD_ADDR;
+
+            OUT_1: next_state = OUT_2;
+            OUT_2: next_state = OUT_3;
+            OUT_3: next_state = LOAD_ADDR;
+
             default: next_state = LOAD_ADDR;
         endcase
     end
+
+    // condAR: 00=PC 01=SP 10=IMM 11=AR_EXT | condDR: 000=mem 001=X 010=Y 011=PC 100=IMM 101=A 110=io_data 111=flags
+    // condALU: 00=opc 01=op1(X) 10=op2(Y) 11=op2(IMM) | regaddr: 0=X 1=Y
 
     always @(*) begin
         ldAR = 0;
@@ -336,8 +380,12 @@ module cu (
         use_dr_for_a = 0;
         use_movr_flags = 0;
         finish = 0;
+        io_we = 0;
+        io_re = 0;
+        ivt_mode = 0;
 
         case (state)
+            // ==== FETCH / DECODE ====
             LOAD_ADDR: begin
                 ldAR = 1;
                 condAR = 2'b00;
@@ -357,6 +405,7 @@ module cu (
                 finish = 1;
             end
 
+            // ==== LOAD / STORE ====
             LOAD_1: begin
                 ldAR = 1;
                 condAR = 2'b10;
@@ -392,6 +441,7 @@ module cu (
                 memWR = 1;
             end
 
+            // ==== BRANCHES ====
             BRA_1: begin
                 ldPC = 1;
                 ldPCfromDR = 0;
@@ -407,6 +457,7 @@ module cu (
             BGT_SKIP, BLT_SKIP, BGE_SKIP, BLE_SKIP, BNE_SKIP: begin
             end
 
+            // ==== STACK / CALL / RET ====
             PUSH_1: begin
                 ldAR = 1;
                 condAR = 2'b01;
@@ -446,6 +497,7 @@ module cu (
                 ldPCfromDR = 1;
             end
 
+            // ==== ALU OPERATIONS ====
             ALU_LOAD_OPC: begin
                 condALU = 2'b00;
                 alu_start = 1;
@@ -457,10 +509,7 @@ module cu (
             end
 
             ALU_LOAD_OP2: begin
-                if (opcode[5] == 1'b0)
-                    condALU = 2'b10;
-                else
-                    condALU = 2'b11;
+                condALU = opcode[5] ? 2'b11 : 2'b10;  // 0=Y (register), 1=IMM (immediate)
                 alu_start = 1;
             end
 
@@ -482,6 +531,7 @@ module cu (
                 end
             end
 
+            // ==== REGISTER OPERATIONS ====
             MOV_1: begin
                 ldDR = 1;
                 condDR = 3'b100;
@@ -530,6 +580,7 @@ module cu (
                 use_xy_for_flags = 1;
             end
 
+            // ==== MINING ACCELERATOR ====
             MINE_START: begin
                 mining_start = 1;
             end
@@ -571,6 +622,7 @@ module cu (
             NOP_1: begin
             end
 
+            // ==== PUSH_REG / POP_REG ====
             PUSH_REG_1: begin
                 ldAR = 1;
                 condAR = 2'b01;
@@ -610,6 +662,15 @@ module cu (
                     ldY = 1;
                 end
             end
+
+            // ==== I/O (IN / OUT) ====
+            IN_1: begin ldAR = 1; condAR = 2'b11; end  // AR ← I/O page
+            IN_2: begin io_re = 1; ldDR = 1; condDR = 3'b110; end  // DR ← io_data
+            IN_3: begin ldA = 1; use_dr_for_a = 1; end             // A ← DR
+
+            OUT_1: begin ldAR = 1; condAR = 2'b11; end  // AR ← I/O page
+            OUT_2: begin ldDR = 1; condDR = 3'b101; end // DR ← A
+            OUT_3: begin io_we = 1; end
         endcase
     end
 

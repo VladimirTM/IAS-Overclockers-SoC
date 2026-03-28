@@ -26,6 +26,8 @@ OPCODE = {
     "NOP": '100010',
     "PUSH": '100011', "POP": '100100',
     "BNE": '100101',  # Branch if Not Equal (Z==0)
+    "IN":  '100110',  # Read I/O port → A
+    "OUT": '100111',  # Write A → I/O port
     # Immediate value operations
     "MOVI": '111001',
     "ADDI": '101010', "SUBI": '101011', "MULI": '101100',
@@ -36,6 +38,20 @@ OPCODE = {
 }
 
 MEMORY_SIZE = 1024  # Total memory lines in output file
+
+# Opcode groups by encoding format
+_OP_NO_OPERAND = {0, 9, 28, 34}                          # END, RET, MINE, NOP
+_OP_MEMORY     = {1, 2}                                   # LD, ST
+_OP_IO         = {38, 39}                                 # IN, OUT
+_OP_BRANCH     = {3, 4, 5, 6, 7, 8, 30, 31, 32, 33, 37} # BRA/BRZ/BRN/BRC/BRO/JMP/BGT/BLT/BGE/BLE/BNE
+_OP_REG_ARITH  = set(range(10, 25)) | {26, 27, 35, 36}   # ADD-TST, INC, DEC, PUSH, POP
+_OP_IMM_ARITH  = set(range(42, 57))                       # ADDI-TSTI
+_REG_MAP = {'A': '00', 'X': '01', 'Y': '10'}
+
+
+def _reg_bit(operand: str) -> str:
+    """Return '0' for X register, '1' for Y register (regaddr field)."""
+    return '0' if operand.strip().upper() == 'X' else '1'
 
 
 def to_twos_complement(value, bits):
@@ -60,66 +76,53 @@ def extract_label(instruction, line_number, labels):
 
 
 def encode_instruction(instruction, labels):
-    """Convert assembly instruction to 16-bit binary machine code."""
+    """Encode one assembly instruction to a 16-bit binary string."""
     words = instruction.split()
     opcode = words[0].upper()
     binary = OPCODE[opcode]
     op_value = int(binary, 2)
 
-    # Instructions with no operands: END (0), RET (9), MINE (28), NOP (34)
-    # Format: opcode + 10 zero bits
-    if op_value in {0, 9, 28, 34}:
+    # END, RET, MINE, NOP — no operand
+    if op_value in _OP_NO_OPERAND:
         return binary + '0' * 10
 
-    # Memory operations: LD (1), ST (2)
-    # Format: opcode + reg_bit (0=X, 1=Y) + 9-bit address
-    if op_value in {1, 2}:
-        reg_bit = '0' if parse_operand(words[1]).upper() == 'X' else '1'
+    # LD, ST — opcode + reg_bit(0=X,1=Y) + 9-bit address
+    if op_value in _OP_MEMORY:
         address = format(int(parse_operand(words[2])), '09b')
-        return binary + reg_bit + address
+        return binary + _reg_bit(parse_operand(words[1])) + address
 
-    # Branch instructions: BRA-BRO (3-7), JMP (8), BGT-BLE (30-33), BNE (37)
-    # Format: opcode + 10-bit address
-    if op_value == 8 or (3 <= op_value <= 7) or (30 <= op_value <= 33) or op_value == 37:
+    # IN, OUT — opcode + 10-bit port address
+    if op_value in _OP_IO:
+        port = format(int(parse_operand(words[1])), '010b')
+        return binary + port
+
+    # Branch instructions — opcode + 10-bit label address
+    if op_value in _OP_BRANCH:
         address = format(labels[words[1]], '010b')
         return binary + address
 
-    # MOVR (29): Register-to-register move
-    # Format: opcode + src_reg (2 bits) + dst_reg (2 bits) + 6 zero bits
+    # MOVR — opcode + src_reg(2) + dst_reg(2) + 000000
     if op_value == 29:
-        reg_map = {'A': '00', 'X': '01', 'Y': '10'}
-        dst_reg = reg_map[parse_operand(words[1]).upper()]
-        src_reg = reg_map[parse_operand(words[2]).upper()]
+        dst_reg = _REG_MAP[parse_operand(words[1]).upper()]
+        src_reg = _REG_MAP[parse_operand(words[2]).upper()]
         return binary + src_reg + dst_reg + '000000'
 
-    # MOV instruction (25): Move immediate to register
-    # Format: opcode + reg_bit (0=X, 1=Y) + 9-bit immediate value
+    # MOV — opcode + reg_bit + 9-bit signed immediate
     if op_value == 25:
-        reg_bit = '0' if parse_operand(words[1]).upper() == 'X' else '1'
         immediate = to_twos_complement(int(parse_operand(words[2])), 9)
-        return binary + reg_bit + immediate
+        return binary + _reg_bit(parse_operand(words[1])) + immediate
 
-    # Register operations: ADD-TST (10-24), INC (26), DEC (27)
-    # Format: opcode + reg_bit (0=X, 1=Y) + 9 zero bits
-    if (10 <= op_value <= 24) or op_value in {26, 27}:
-        reg_bit = '0' if parse_operand(words[1]).upper() == 'X' else '1'
-        return binary + reg_bit + '0' * 9
+    # ADD-TST, INC, DEC, PUSH, POP — opcode + reg_bit + 9 zeros
+    if op_value in _OP_REG_ARITH:
+        return binary + _reg_bit(parse_operand(words[1])) + '0' * 9
 
-    # PUSH/POP register operations: PUSH (35), POP (36)
-    # Format: opcode + reg_bit (0=X, 1=Y) + 9 zero bits
-    if op_value in {35, 36}:
-        reg_bit = '0' if parse_operand(words[1]).upper() == 'X' else '1'
-        return binary + reg_bit + '0' * 9
-
-    # MOVI (57): Move immediate value to register
-    # Format: opcode + 0 + 9-bit immediate value
+    # MOVI — opcode + 0 + 9-bit signed immediate
     if op_value == 57:
         immediate = to_twos_complement(int(words[1]), 9)
         return binary + '0' + immediate
 
-    # Immediate operations: ADDI-TSTI (42-56)
-    # Format: opcode + 0 + 9-bit immediate value
-    if 42 <= op_value <= 56:
+    # ADDI-TSTI — opcode + 0 + 9-bit signed immediate
+    if op_value in _OP_IMM_ARITH:
         immediate = to_twos_complement(int(words[1]), 9)
         return binary + '0' + immediate
 

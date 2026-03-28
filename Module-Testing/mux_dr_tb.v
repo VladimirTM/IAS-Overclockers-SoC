@@ -3,6 +3,8 @@
 module mux_dr_tb;
 
 reg [15:0] mem, X, Y, PC, IMM, A;
+reg [15:0] io_data;
+reg        flags_Z, flags_N, flags_C, flags_O;
 reg [2:0] CondDR;
 wire [15:0] out;
 
@@ -18,6 +20,11 @@ mux_dr CUT (
     .PC(PC),
     .IMM(IMM),
     .A(A),
+    .io_data(io_data),
+    .flags_Z(flags_Z),
+    .flags_N(flags_N),
+    .flags_C(flags_C),
+    .flags_O(flags_O),
     .CondDR(CondDR),
     .out(out)
 );
@@ -26,7 +33,7 @@ mux_dr CUT (
 task check_mux_dr;
     input [511:0] test_name;
     input [15:0] exp_out;
-    
+
     begin
         test_count = test_count + 1;
         if (out === exp_out) begin
@@ -47,13 +54,18 @@ end
 
 initial begin
     // Initializare date de intrare
-    mem = 16'h0001; // Valori sugestive pentru identificare usoara
-    X   = 16'h1111;
-    Y   = 16'h2222;
-    PC  = 16'h3333;
-    IMM = 16'h4444;
-    A   = 16'hAAAA;
-    CondDR = 3'b111; // Incepem cu o stare default
+    mem     = 16'h0001;
+    X       = 16'h1111;
+    Y       = 16'h2222;
+    PC      = 16'h3333;
+    IMM     = 16'h4444;
+    A       = 16'hAAAA;
+    io_data = 16'h0000;
+    flags_Z = 1'b0;
+    flags_N = 1'b0;
+    flags_C = 1'b0;
+    flags_O = 1'b0;
+    CondDR  = 3'b000;
 
     $display("========== INCEPERE TESTARE MUX DR ==========");
 
@@ -87,17 +99,67 @@ initial begin
     #5;
     check_mux_dr("Selectie IMM", 16'h4444);
 
-    // --- TEST 6: Verificare Cazul Default (ex: 101) ---
+    // --- TEST 6: Selectie Acumulator (101) ---
     @(negedge clk);
     CondDR = 3'b101;
     #5;
     check_mux_dr("Selectie A", 16'hAAAA);
 
-    // --- TEST 7: Verificare Cazul Default (ex: 111) ---
+    // --- TEST 7: Selectie io_data (110) - calea IN instruction ---
     @(negedge clk);
-    CondDR = 3'b111;
+    io_data = 16'hD00D;
+    CondDR  = 3'b110;
     #5;
-    check_mux_dr("Verificare Default (111 -> 0)", 16'h0000);
+    check_mux_dr("Selectie io_data (cale IN)", 16'hD00D);
+
+    // --- TEST 8: io_data alt valoare (110) ---
+    @(negedge clk);
+    io_data = 16'hBEEF;
+    CondDR  = 3'b110;
+    #5;
+    check_mux_dr("Selectie io_data = 0xBEEF", 16'hBEEF);
+
+    // --- TEST 9: Flags impachetate Z=1,N=0,C=0,O=0 -> 0x8000 (111) ---
+    @(negedge clk);
+    flags_Z = 1'b1; flags_N = 1'b0; flags_C = 1'b0; flags_O = 1'b0;
+    CondDR  = 3'b111;
+    #5;
+    check_mux_dr("FLAGS impachetate: Z=1 -> 0x8000", 16'h8000);
+
+    // --- TEST 10: Flags impachetate Z=0,N=1,C=0,O=0 -> 0x4000 (111) ---
+    @(negedge clk);
+    flags_Z = 1'b0; flags_N = 1'b1; flags_C = 1'b0; flags_O = 1'b0;
+    CondDR  = 3'b111;
+    #5;
+    check_mux_dr("FLAGS impachetate: N=1 -> 0x4000", 16'h4000);
+
+    // --- TEST 11: Flags impachetate Z=1,N=0,C=1,O=0 -> 0xA000 (111) ---
+    @(negedge clk);
+    flags_Z = 1'b1; flags_N = 1'b0; flags_C = 1'b1; flags_O = 1'b0;
+    CondDR  = 3'b111;
+    #5;
+    check_mux_dr("FLAGS impachetate: Z=1,C=1 -> 0xA000", 16'hA000);
+
+    // --- TEST 12: Flags impachetate Z=1,N=1,C=1,O=1 -> 0xF000 (111) ---
+    @(negedge clk);
+    flags_Z = 1'b1; flags_N = 1'b1; flags_C = 1'b1; flags_O = 1'b1;
+    CondDR  = 3'b111;
+    #5;
+    check_mux_dr("FLAGS impachetate: ZNCO=1111 -> 0xF000", 16'hF000);
+
+    // --- TEST 13: Flags impachetate toate 0 -> 0x0000 (111) ---
+    @(negedge clk);
+    flags_Z = 1'b0; flags_N = 1'b0; flags_C = 1'b0; flags_O = 1'b0;
+    CondDR  = 3'b111;
+    #5;
+    check_mux_dr("FLAGS impachetate: ZNCO=0000 -> 0x0000", 16'h0000);
+
+    // --- TEST 14: io_data nu afecteaza alte selectii ---
+    @(negedge clk);
+    io_data = 16'hDEAD;
+    CondDR  = 3'b000;
+    #5;
+    check_mux_dr("io_data ignorat cand CondDR=000", 16'h0001);
 
     // Raport Final
     $display("---------------------------------------");
@@ -106,7 +168,7 @@ initial begin
     $display("Teste PASS  : %d", pass_count);
     $display("Teste FAIL  : %d", fail_count);
     $display("---------------------------------------");
-    
+
     #50; $stop;
 end
 

@@ -370,6 +370,18 @@ Or run the simple testbench for a basic register dump:
 make simple
 ```
 
+Run all 24 module unit testbenches:
+
+```bash
+make modules
+```
+
+Run module tests then CPU integration test with a combined summary:
+
+```bash
+make test-all
+```
+
 ### Custom Assembly Programs
 
 Test your own assembly programs:
@@ -387,8 +399,8 @@ For step-by-step control over the build process:
 # 1. Assemble your program (converts .asm to machine code)
 make assemble ASM=test_program.asm
 
-# 2. Initialize memory with test data
-make init-memory
+# 2. Initialize memory with test data (interactive — press Enter to accept defaults)
+make memory
 
 # 3. Compile Verilog modules to simulation binary
 make compile
@@ -701,7 +713,8 @@ The project includes comprehensive testing at multiple levels:
 Run all 24 module testbenches (including `alu_negative_test_tb.v` and the new `io_controller_tb.v`):
 
 ```bash
-cd Module-Testing && bash run_all_testbenches.sh
+make modules                                        # from repo root (preferred)
+cd Module-Testing && bash run_all_testbenches.sh    # equivalent, direct
 ```
 
 The script runs all `*_tb.v` files (including `alu_negative_test_tb.v`), prints per-testbench results, and reports a combined PASS/FAIL total. `cpu_tb.v` is excluded — use `make test` (which assembles the program first) to run that testbench.

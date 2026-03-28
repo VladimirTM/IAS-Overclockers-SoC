@@ -27,12 +27,19 @@ assemble:
 	@python3 CPU-Assembler/main.py $(ASM) data_bin.txt
 	@echo "✓ Assembly complete"
 
-# Initialize memory with test data
-.PHONY: init-memory
-init-memory:
-	@echo "Initializing memory..."
-	@python3 data_init.py
-	@echo "✓ Memory initialized"
+# Interactive memory init: assemble program, then prompt for custom memory values
+# Press ENTER at the prompt to accept defaults, or type 2 to add custom addresses
+.PHONY: memory
+memory:
+	@if [ ! -f "$(ASM)" ]; then \
+		echo "Error: Assembly file '$(ASM)' not found"; \
+		exit 1; \
+	fi
+	@echo "Assembling $(ASM)..."
+	@python3 CPU-Assembler/main.py $(ASM) data_bin_temp.txt
+	@python3 data_init.py --input data_bin_temp.txt --output data_bin.txt
+	@rm -f data_bin_temp.txt
+	@echo "✓ Memory ready — run 'make quick' to simulate without re-assembling"
 
 # Compile the testbench
 .PHONY: compile
@@ -81,7 +88,7 @@ test:
 		exit 1; \
 	fi
 	@python3 CPU-Assembler/main.py $(ASM) data_bin_temp.txt
-	@python3 data_init.py --input data_bin_temp.txt --output data_bin.txt
+	@python3 data_init.py --input data_bin_temp.txt --output data_bin.txt --defaults
 	@iverilog -o $(SIM_OUT) $(shell find CPU -name "*.v" ! -name "*_tb*.v") $(TB_PATH) >compile_errors.tmp 2>&1; \
 	  istat=$$?; \
 	  grep -v "warning: .readmemb\|warning: .*_tb" compile_errors.tmp || true; \
@@ -116,7 +123,7 @@ simple:
 	@echo "========================================"
 	@echo ""
 	@python3 CPU-Assembler/main.py $(ASM) data_bin_temp.txt
-	@python3 data_init.py --input data_bin_temp.txt --output data_bin.txt
+	@python3 data_init.py --input data_bin_temp.txt --output data_bin.txt --defaults
 	@iverilog -o cpu_tb_sim $(shell find CPU -name "*.v" ! -name "*_tb*.v") cpu_tb.v >compile_errors.tmp 2>&1; \
 	  istat=$$?; \
 	  grep -v "warning: .readmemb\|warning: .*_tb" compile_errors.tmp || true; \
@@ -125,6 +132,43 @@ simple:
 	@echo ""
 	@vvp cpu_tb_sim
 	@rm -f data_bin_temp.txt
+
+# Run all module-level unit testbenches
+.PHONY: modules
+modules:
+	@cd $(TB_DIR) && bash run_all_testbenches.sh
+
+# Run module tests then CPU integration test, with a combined summary
+.PHONY: test-all
+test-all:
+	@module_out=$$(cd $(TB_DIR) && bash run_all_testbenches.sh 2>&1); \
+	 echo "$$module_out"; \
+	 mod_pass=$$(echo "$$module_out" | grep "Total Tests PASS" | grep -oE '[0-9]+$$'); \
+	 mod_fail=$$(echo "$$module_out" | grep "Total Tests FAIL" | grep -oE '[0-9]+$$'); \
+	 mod_pass=$${mod_pass:-0}; mod_fail=$${mod_fail:-0}; \
+	 echo ""; \
+	 cpu_out=$$($(MAKE) --no-print-directory test 2>&1); \
+	 echo "$$cpu_out"; \
+	 cpu_pass=$$(echo "$$cpu_out" | grep "^  Pass:" | grep -oE '[0-9]+$$'); \
+	 cpu_fail=$$(echo "$$cpu_out" | grep "^  Fail:" | grep -oE '[0-9]+$$'); \
+	 cpu_pass=$${cpu_pass:-0}; cpu_fail=$${cpu_fail:-0}; \
+	 total_pass=$$((mod_pass + cpu_pass)); \
+	 total_fail=$$((mod_fail + cpu_fail)); \
+	 echo ""; \
+	 echo "========================================"; \
+	 echo "           COMBINED SUMMARY             "; \
+	 echo "========================================"; \
+	 printf "  Module tests    %4d pass  %2d fail\n" $$mod_pass $$mod_fail; \
+	 printf "  CPU integration %4d pass  %2d fail\n" $$cpu_pass $$cpu_fail; \
+	 echo "  ----------------------------------------"; \
+	 printf "  Total           %4d pass  %2d fail\n" $$total_pass $$total_fail; \
+	 if [ "$$total_fail" -eq 0 ]; then \
+	   echo "  Result: ALL TESTS PASSED!"; \
+	 else \
+	   echo "  Result: $$total_fail TESTS FAILED"; \
+	   exit 1; \
+	 fi; \
+	 echo "========================================"
 
 # Clean generated files
 .PHONY: clean
@@ -161,8 +205,14 @@ help:
 	@echo "  make test TB=testbench.v               - Test with custom testbench"
 	@echo "  make test ASM=file.asm TB=testbench.v  - Test with both custom"
 	@echo ""
+	@echo "  make modules                           - Run all module unit testbenches"
+	@echo "  make test-all                          - Run module tests then CPU integration test"
+	@echo ""
 	@echo "  make simple                            - Simple test (shows register dump)"
 	@echo "  make simple ASM=file.asm               - Simple test with custom ASM file"
+	@echo ""
+	@echo "  make memory                            - Assemble + interactive memory init (Enter=defaults)"
+	@echo "  make memory ASM=file.asm               - Same with custom ASM file"
 	@echo ""
 	@echo "  make assemble                          - Assemble default ASM file"
 	@echo "  make assemble ASM=file.asm             - Assemble custom ASM file"

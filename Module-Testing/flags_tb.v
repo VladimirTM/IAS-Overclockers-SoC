@@ -5,14 +5,15 @@ module flags_tb;
     reg clk;
     reg rst_n;
     reg ldFLAG;
-    
+
     reg alu_zero;
     reg alu_neg;
     reg alu_carry;
     reg alu_overflow;
     reg use_direct_value;
+    reg use_packed_flags;
     reg [15:0] direct_value;
-    
+
     wire Z;
     wire N;
     wire C;
@@ -27,6 +28,7 @@ module flags_tb;
         .alu_carry(alu_carry),
         .alu_overflow(alu_overflow),
         .use_direct_value(use_direct_value),
+        .use_packed_flags(use_packed_flags),
         .direct_value(direct_value),
         .Z(Z),
         .N(N),
@@ -75,6 +77,7 @@ module flags_tb;
         alu_carry = 0;
         alu_overflow = 0;
         use_direct_value = 0;
+        use_packed_flags = 0;
         direct_value = 16'h0000;
         
         /*
@@ -175,8 +178,69 @@ module flags_tb;
         @ (negedge clk);
         rst_n = 1;
         check_test("After Reset release: ZNCO = 0000", 0, 0, 0, 0);
-        
-        
+
+        /*
+        ========================================
+             Packed Flags Restore Tests (IRET)
+        ========================================
+        */
+
+        @ (negedge clk);
+        ldFLAG = 1;
+        use_direct_value = 0;
+        use_packed_flags = 1;
+        direct_value = 16'hF000;   // bits [15:12] = 1111
+        alu_zero = 0; alu_neg = 0; alu_carry = 0; alu_overflow = 0;
+        @ (negedge clk);
+        check_test("Packed 0xF000 -> ZNCO = 1111", 1, 1, 1, 1);
+
+        direct_value = 16'hA000;   // bits [15:12] = 1010
+        @ (negedge clk);
+        check_test("Packed 0xA000 -> ZNCO = 1010", 1, 0, 1, 0);
+
+        direct_value = 16'h5000;   // bits [15:12] = 0101
+        @ (negedge clk);
+        check_test("Packed 0x5000 -> ZNCO = 0101", 0, 1, 0, 1);
+
+        /*
+        ========================================
+             Packed Flags — Lower Bits Ignored
+        ========================================
+        */
+
+        // Only bits [15:12] matter; lower 12 bits must be ignored
+        direct_value = 16'hF0AB;   // bits [15:12] = 1111, lower bits non-zero
+        @ (negedge clk);
+        check_test("Packed 0xF0AB -> ZNCO = 1111 (lower bits ignored)", 1, 1, 1, 1);
+
+        direct_value = 16'h50FF;   // bits [15:12] = 0101, lower bits non-zero
+        @ (negedge clk);
+        check_test("Packed 0x50FF -> ZNCO = 0101 (lower bits ignored)", 0, 1, 0, 1);
+
+        /*
+        ========================================
+             use_direct_value beats use_packed_flags
+        ========================================
+        */
+
+        // When both modes are asserted simultaneously, use_direct_value takes priority
+        // (its branch comes first in the RTL if-else chain)
+        @ (negedge clk);
+        ldFLAG = 1;
+        use_direct_value = 1;
+        use_packed_flags = 1;
+        direct_value = 16'h0000;  // direct: Z=1, N=0, C=0, O=0; packed: all 0
+        @ (negedge clk);
+        check_test("Both modes: use_direct_value wins (0x0000 -> Z=1)", 1, 0, 0, 0);
+
+        direct_value = 16'hF000;  // direct: Z=0 (not zero), N=1 (bit15); packed: 1111
+        @ (negedge clk);
+        // use_direct_value: Z=(0xF000==0)=0, N=1, C=0, O=0
+        check_test("Both modes: use_direct_value wins (0xF000 -> Z=0,N=1,C=0,O=0)", 0, 1, 0, 0);
+
+        use_direct_value = 0;
+        use_packed_flags = 0;
+
         $display("---------------------------------------");
         $display("Simulare Finalizata!");
         $display("Total Teste: %d", test_count);

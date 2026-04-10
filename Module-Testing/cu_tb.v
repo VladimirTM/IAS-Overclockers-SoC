@@ -41,6 +41,7 @@ module cu_tb;
     wire use_dr_for_a;
     wire use_movr_flags;
     wire finish;
+    wire io_we, io_re, ivt_mode;
 
     cu uut_cu (
         .clk(clk),
@@ -80,7 +81,19 @@ module cu_tb;
         .use_mining_result(use_mining_result),
         .use_dr_for_a(use_dr_for_a),
         .use_movr_flags(use_movr_flags),
-        .finish(finish)
+        .finish(finish),
+        // I/O control ports
+        .io_we(io_we),
+        .io_re(io_re),
+        .ivt_mode(ivt_mode),
+        // Interrupt system ports (inactive for this testbench)
+        .intr_pending(1'b0),
+        .irq_id(2'b00),
+        .intr_ack(),
+        .set_I(),
+        .clr_I(),
+        .use_packed_flags(),
+        .saved_irq_id()
     );
 
     // Concatenam toate iesirile intr-un vector pentru o verificare usoara
@@ -142,9 +155,11 @@ module cu_tb;
             #1;
             rst_n = 1;
             // Suntem in LOAD_ADDR
-            @(negedge clk); 
+            @(negedge clk);
             // Suntem in LOAD_INSTR
-            @(negedge clk); 
+            @(negedge clk);
+            // Suntem in INTR_CHECK (v3.1: inserted between LOAD_INSTR and DECODE)
+            @(negedge clk);
             // Suntem in DECODE
         end
     endtask
@@ -206,7 +221,7 @@ module cu_tb;
         // Suntem in DECODE. Setam Opcode pentru LOAD si regaddr=0 (X)
         opcode = OP_LOAD;
         regaddr = 0; // Target X
-        
+        @(negedge clk); // v3.1: advance INTR_CHECK → DECODE (intr_pending=0)
         // Tranzitie DECODE -> LOAD_1
         // LOAD_1: ldAR=1, condAR=10 (bits 29, 28-27) -> 110... -> 0x30...
         @(negedge clk);
@@ -232,15 +247,16 @@ module cu_tb;
         ========================================
         */
         // Derulam Fetch-ul manual pana la DECODE
-        // LOAD_ADDR -> LOAD_INSTR -> DECODE
+        // LOAD_ADDR -> LOAD_INSTR -> INTR_CHECK -> DECODE
         @(negedge clk); // LOAD_INSTR
         check_test("State LOAD_INSTR: ldDR=ldIR=incPC=1", 33'h023000000);
-        @(negedge clk); // DECODE
+        @(negedge clk); // INTR_CHECK (no signals when intr_pending=0)
         check_test("State DECODE: No signals", 33'h000000000);
-        
+
         opcode = OP_ADD;
         regaddr = 0;
-        
+        @(negedge clk); // v3.1: advance INTR_CHECK → DECODE
+
         // DECODE -> ALU_LOAD_OPC
         // alu_start=1 (bit 11), condALU=00 (bits 10-9) -> 0x00000800
         @(negedge clk);
@@ -277,50 +293,40 @@ module cu_tb;
              Instruction Test: BRZ (Branch if Zero)
         ========================================
         */
-        // Intoarcere la LOAD_ADDR -> LOAD_INSTR -> DECODE
+        // Intoarcere la LOAD_ADDR -> LOAD_INSTR -> INTR_CHECK -> DECODE
         @(negedge clk); // LOAD_ADDR
         check_test("Return to LOAD_ADDR", 33'h100000000);
         @(negedge clk); // LOAD_INSTR
         check_test("State LOAD_INSTR: ldDR=ldIR=incPC=1", 33'h023000000);
-        @(negedge clk); // DECODE
+        @(negedge clk); // INTR_CHECK (no signals when intr_pending=0)
         check_test("State DECODE: No signals", 33'h000000000);
 
         opcode = OP_BRZ;
         Z = 1; // Flag Zero setat -> Branch Taken
-        
-        // DECODE -> BRZ_CHECK -> BRZ_TAKE (intr-un ciclu daca logica e combinationala pe next_state)
-        // In BRZ_CHECK, daca Z=1, next_state = BRZ_TAKE.
-        // In BRZ_TAKE: ldPC=1 (bit 20) -> 0x00100000
-        @(negedge clk); // Aceasta tranzitie executa starea determinata din DECODE
-        // Nota: FSM-ul tau trece prin BRZ_CHECK intr-un clock, apoi BRZ_TAKE in urmatorul 
-        // Verificand codul: DECODE -> BRZ_CHECK.
-        // Starea BRZ_CHECK nu are iesiri (case default -> 0).
+        @(negedge clk); // v3.1: advance INTR_CHECK → DECODE
+        // DECODE -> BRZ_CHECK
+        @(negedge clk);
         check_test("State BRZ_CHECK: No signals", 33'h000000000);
-        
+
         // Urmatoarea stare: BRZ_TAKE (pentru ca Z=1)
         @(negedge clk);
         check_test("State BRZ_TAKE: ldPC=1", 33'h000800000);
-        
+
         // For Z = 0
-        
-        // Intoarcere la LOAD_ADDR -> LOAD_INSTR -> DECODE
+
+        // Intoarcere la LOAD_ADDR -> LOAD_INSTR -> INTR_CHECK -> DECODE
         @(negedge clk); // LOAD_ADDR
         check_test("Return to LOAD_ADDR", 33'h100000000);
         @(negedge clk); // LOAD_INSTR
         check_test("State LOAD_INSTR: ldDR=ldIR=incPC=1", 33'h023000000);
-        @(negedge clk); // DECODE
+        @(negedge clk); // INTR_CHECK (no signals when intr_pending=0)
         check_test("State DECODE: No signals", 33'h000000000);
 
         opcode = OP_BRZ;
         Z = 0; // Flag Zero inactiv -> Branch Skipped
-        
-        // DECODE -> BRZ_CHECK -> BRZ_SKIP (intr-un ciclu daca logica e combinationala pe next_state)
-        // In BRZ_CHECK, daca Z=0, next_state = BRZ_SKIP.
-        // In BRZ_TAKE: ldPC=1 (bit 20) -> 0x00100000
-        @(negedge clk); // Aceasta tranzitie executa starea determinata din DECODE
-        // Nota: FSM-ul tau trece prin BRZ_CHECK intr-un clock, apoi BRZ_SKIP in urmatorul 
-        // Verificand codul: DECODE -> BRZ_CHECK.
-        // Starea BRZ_CHECK nu are iesiri (case default -> 0).
+        @(negedge clk); // v3.1: advance INTR_CHECK → DECODE
+        // DECODE -> BRZ_CHECK
+        @(negedge clk);
         check_test("State BRZ_CHECK: No signals", 33'h000000000);
         
         // Urmatoarea stare: BRZ_SKIP (pentru ca Z=0)

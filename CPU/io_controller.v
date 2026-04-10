@@ -50,7 +50,6 @@ module io_controller (
             kbd_latch <= kbd_data_in;
             kbd_irq   <= 1'b1;
         end else if (io_re && io_addr == KBD_DATA) begin
-            // Reading KBD_DATA clears latch and IRQ
             kbd_latch <= 16'h0000;
             kbd_irq   <= 1'b0;
         end
@@ -77,7 +76,7 @@ module io_controller (
                 timer_periodic <= io_data_in[1];
             end
 
-            if (io_we && io_addr == TIMER_PERIOD) begin  // write also resets counter
+            if (io_we && io_addr == TIMER_PERIOD) begin
                 timer_period <= io_data_in;
                 timer_count  <= 16'h0000;
             end
@@ -109,11 +108,11 @@ module io_controller (
             mining_done_prev   <= 1'b0;
         end else begin
             mining_done_prev <= mining_done_in;
-            if (mining_done_in && !mining_done_prev) begin  // rising edge
+            if (mining_done_in && !mining_done_prev) begin  // mining_done rising edge
                 mining_hash_latch  <= mining_hash_in;
                 mining_nonce_latch <= mining_nonce_in;
                 mining_irq         <= 1'b1;
-            end else if (io_re && (io_addr == MINE_HASH || io_addr == MINE_NONCE)) begin  // read-to-clear
+            end else if (io_re && (io_addr == MINE_HASH || io_addr == MINE_NONCE)) begin  // read clears irq
                 mining_irq <= 1'b0;
             end
         end
@@ -141,7 +140,7 @@ module io_controller (
         end
     end
 
-    // Read path: combinational — IN_2 latches in the same cycle io_re is asserted
+    // Combinational read — io_data_out valid same cycle as io_re
     always @(*) begin
         io_data_out = 16'h0000;
         if (io_re) begin

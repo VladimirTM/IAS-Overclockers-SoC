@@ -48,9 +48,7 @@ module mining_core (
     localparam [15:0] H6 = 16'h1f83;
     localparam [15:0] H7 = 16'hd9ab;
 
-    // =========================================================
-    // W[0:15] initialization combinational network
-    // =========================================================
+    // W[0:15] initialization
 
     // W[2] = data_in ^ current_nonce
     wire [15:0] w2;
@@ -177,9 +175,7 @@ module mining_core (
         .cin(1'b0), .z(w15_sum2), .cout()
     );
 
-    // =========================================================
-    // SHA-256 round computation combinational network
-    // =========================================================
+    // SHA-256 round computation
 
     // sigma1(e) = rotr(e,6) ^ rotr(e,11) ^ rotr(e,15)
     wire [15:0] s1_r6, s1_r11, s1_r15, s1_ab, sigma1_e;
@@ -336,9 +332,7 @@ module mining_core (
         .cin(1'b0), .z(nonce_inc), .cout()
     );
 
-    // =========================================================
     // Sequential FSM
-    // =========================================================
     always @(posedge clk or negedge reset) begin
         if (!reset) begin
             state <= IDLE;
@@ -422,9 +416,7 @@ module mining_core (
         end
     end
 
-    // =========================================================
-    // Next-state logic (combinational)
-    // =========================================================
+    // Next-state logic
     always @(*) begin
         next_state = state;
 

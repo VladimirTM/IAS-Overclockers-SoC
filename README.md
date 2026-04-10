@@ -8,7 +8,7 @@
 
 The **IAS-Overclockers** project is an educational 16-bit CPU implementation developed as part of the FIC (Faculty of Engineering) course project. This processor combines traditional general-purpose computing capabilities with specialized hardware for cryptocurrency mining operations.
 
-At its core, the CPU features a complete 16-bit von Neumann architecture with 54 instructions, including arithmetic, logic, memory, and control flow operations. What makes this processor unique is its **MINE instruction** - a specialized ASIP extension that implements SHA-256-based hash computation for cryptocurrency mining acceleration.
+At its core, the CPU features a complete 16-bit von Neumann architecture with 60 instructions, including arithmetic, logic, memory, control flow, I/O, and interrupt operations. What makes this processor unique is its **MINE instruction** - a specialized ASIP extension that implements SHA-256-based hash computation for cryptocurrency mining acceleration.
 
 **New Instruction Extensions** (v2.0):
 
@@ -27,6 +27,14 @@ At its core, the CPU features a complete 16-bit von Neumann architecture with 54
 - **Memory-Mapped I/O Controller**: Keyboard, display, timer, and mining-result peripherals accessible via addresses with bit 10 set (I/O space)
 - Port map: KBD_DATA (0), KBD_STATUS (1), DISP_DATA (16), TIMER_CTRL (32), TIMER_PERIOD (33), TIMER_COUNT (34), IER (48), IFR (49), MINE_HASH (64), MINE_NONCE (65)
 
+**New Interrupt Extensions** (v3.1 — Interrupt System):
+
+- **EI**: Enable interrupts (I_flag ← 1)
+- **DI**: Disable interrupts (I_flag ← 0)
+- **IRET**: Return from interrupt (restores PC and flags from stack, re-enables interrupts)
+- **WAIT**: Halt CPU until any enabled interrupt fires
+- **Interrupt Controller**: 4-source fixed-priority controller (TIMER > KBD > MINE > EXT); IVT at addresses 190–193; automatic context save/restore on interrupt entry/return
+
 This project demonstrates advanced concepts in digital design, including CPU architecture, instruction set design, finite state machines, and hardware-software co-design through the integration of specialized acceleration cores.
 
 ---
@@ -34,14 +42,14 @@ This project demonstrates advanced concepts in digital design, including CPU arc
 ## Features
 
 - **16-bit General Purpose Processor** with von Neumann architecture
-- **56 Instructions**: 29 core operations + 24 extensions + MINE + **IN + OUT** (BEQ is alias for BRZ)
+- **60 Instructions**: 29 core operations + 24 extensions + MINE + **IN + OUT** + **EI + DI + IRET + WAIT** (BEQ is alias for BRZ)
 - **Application-Specific Extension**: Cryptocurrency mining core with SHA-256-based hashing
 - **Memory-Mapped I/O**: Peripheral controller (keyboard, display, timer, mining result ports) accessed via `IN`/`OUT` instructions; bit 10 of address register selects I/O space vs RAM
 - **Complete Toolchain**:
   - Python-based assembler for assembly-to-machine-code translation (supports comma-separated operands)
   - Interactive memory initialization tool
   - Comprehensive testbench suite
-- **Robust Testing**: 24 module testbenches with 524 test cases (all PASS)
+- **Robust Testing**: 27 module testbenches with 629 test cases (all PASS)
 - **Build Automation**: Makefile-based workflow with shell script wrappers
 - **Waveform Analysis**: VCD file generation for GTKWave debugging
 
@@ -72,12 +80,13 @@ The CPU provides a rich set of 16-bit registers for flexible programming:
 ### Core Components
 
 - **16-bit ALU**: Performs arithmetic, logic, shift, and rotate operations with flag generation
-- **Control Unit**: 78-state FSM (states 0–77) managing fetch-decode-execute; 6 new states for IN/OUT; states 78–97 reserved for interrupt system (see Roadmap)
+- **Control Unit**: 98-state FSM (states 0–97) managing fetch-decode-execute; 6 states for IN/OUT (72–77); 20 states for the full interrupt system (78–97)
 - **Unified Memory**: 1024 x 16-bit words (10-bit addressing) for instructions, data, and stack
 - **I/O Controller** (`io_controller.v`): Memory-mapped peripheral controller; keyboard latch with IRQ, display output with write-enable pulse, free-running timer with configurable period and periodic/one-shot mode, mining result latch; read path is fully combinational (mandatory for single-cycle `IN` instruction)
+- **Interrupt Controller** (`interrupt_controller.v`): 4-source fixed-priority controller (TIMER > KBD > MINE > EXT); latches each IRQ until acknowledged; masked by IER; exposes `intr_pending` and `irq_id` to the CU
 - **Mining Core**: SHA-256-based hash computation engine for proof-of-work operations
 - **Sign Extend Unit**: Converts 9-bit signed immediates to 16-bit values
-- **Address Routing**: `ar_out[10] = 0` → RAM; `ar_out[10] = 1` → I/O controller (the `AR_EXT` mux input, `CondAR = 2'b11`, is used by `IN`/`OUT` and will be reused for IVT access during interrupt handling)
+- **Address Routing**: `ar_out[10] = 0` → RAM; `ar_out[10] = 1` → I/O controller (the `AR_EXT` mux input, `CondAR = 2'b11`, is used by `IN`/`OUT` for I/O addressing and by the interrupt controller for IVT access at addresses 190–193)
 
 ### Instruction Format
 
@@ -108,7 +117,7 @@ Instructions are 16 bits wide with the following encoding:
 
 ## Instruction Set
 
-The CPU supports 54 instructions organized into the following categories:
+The CPU supports 60 instructions organized into the following categories:
 
 ### Control Flow
 
@@ -242,6 +251,26 @@ OUT port : [15:10]=100111 | [9:0]=port_address
 | 64   | 0x040 | R   | MINE_HASH    | Latched mining hash; read clears mining_irq         |
 | 65   | 0x041 | R   | MINE_NONCE   | Latched mining nonce                                |
 
+### Interrupt Instructions (v3.1)
+
+| Instruction | Opcode   | Description                                                                  |
+| ----------- | -------- | ---------------------------------------------------------------------------- |
+| `EI`        | `101000` | Enable interrupts (`I_flag ← 1`); `[9:0] = 0`                               |
+| `DI`        | `101001` | Disable interrupts (`I_flag ← 0`); `[9:0] = 0`                              |
+| `IRET`      | `111010` | Return from interrupt: pop PC, pop FLAGS, re-enable interrupts; `[9:0] = 0`  |
+| `WAIT`      | `111011` | Halt CPU until `intr_pending` asserts (requires `EI` first); `[9:0] = 0`    |
+
+**Interrupt Vector Table (IVT):** RAM addresses 190–193, pre-loaded before execution:
+
+| Address | Source | Description                |
+|---------|--------|----------------------------|
+| 190     | TIMER  | Address of TIMER ISR       |
+| 191     | KBD    | Address of KBD ISR         |
+| 192     | MINE   | Address of MINE ISR        |
+| 193     | EXT    | Address of external ISR    |
+
+**Interrupt context save/restore:** On interrupt entry the CU automatically pushes FLAGS then PC onto the stack; on `IRET` it pops PC then FLAGS and calls `set_I`. The `I_flag` is internal to `cu.v` and is automatically cleared (`clr_I`) on interrupt entry so ISRs run with interrupts disabled.
+
 ### ASIP Extension
 
 | Instruction | Description                                         |
@@ -370,13 +399,19 @@ Or run the simple testbench for a basic register dump:
 make simple
 ```
 
-Run all 24 module unit testbenches:
+Run all 27 module unit testbenches:
 
 ```bash
 make modules
 ```
 
-Run module tests then CPU integration test with a combined summary:
+Run assembler encoding tests (EI/DI/IRET/WAIT/IN/OUT/branches/immediates):
+
+```bash
+make asm-test
+```
+
+Run module tests, CPU integration test, and assembler tests with a combined summary:
 
 ```bash
 make test-all
@@ -587,9 +622,10 @@ END                   ; Halt CPU execution
 ```
 IAS-Overclockers/
 ├── CPU/                          # Core processor Verilog modules
-│   ├── cpu.v                    # Top-level CPU integration module (MMIO routing added)
-│   ├── cu.v                     # Control Unit (78-state FSM; IN/OUT states 72-77)
+│   ├── cpu.v                    # Top-level CPU integration module (MMIO + interrupt wiring)
+│   ├── cu.v                     # Control Unit (98-state FSM; IN/OUT states 72-77; interrupt states 78-97)
 │   ├── io_controller.v          # [NEW v3.0] Memory-mapped I/O peripheral controller
+│   ├── interrupt_controller.v   # [NEW v3.1] 4-source priority interrupt controller (TIMER>KBD>MINE>EXT)
 │   ├── alu.v                    # 16-bit Arithmetic Logic Unit
 │   ├── mining_core.v            # SHA-256 cryptocurrency mining core
 │   ├── memory.v                 # Unified instruction/data memory (1024 words)
@@ -609,7 +645,10 @@ IAS-Overclockers/
 │
 ├── CPU-Assembler/                # Python-based assembler toolchain
 │   ├── main.py                  # Assembly-to-machine-code translator
-│   ├── opcode_table.py          # Instruction opcode definitions
+│   ├── assembler_test.py        # Assembler regression test
+│   ├── assembler_test_extended.py # Extended test: EI/DI/IRET/WAIT/IN/OUT/branches/immediates
+│   ├── test_input_extended.asm  # Input for extended assembler test
+│   ├── expected_extended.txt    # Expected binary output for extended assembler test
 │   └── ...                      # Assembler utilities
 │
 ├── Module-Testing/               # Component-level testbenches
@@ -617,7 +656,10 @@ IAS-Overclockers/
 │   ├── alu_tb.v                 # ALU unit tests
 │   ├── memory_tb.v              # Memory module tests
 │   ├── accumulator_tb.v         # Accumulator register tests
-│   ├── io_controller_tb.v       # [NEW v3.0] I/O controller tests (34 tests)
+│   ├── cpu_interrupt_tb.v       # [NEW v3.1] End-to-end interrupt integration test (8 tests)
+│   ├── cu_interrupt_tb.v        # [NEW v3.1] CU interrupt states 78-97 tests (52 tests)
+│   ├── interrupt_controller_tb.v# [NEW v3.1] Interrupt controller tests (34 tests)
+│   ├── io_controller_tb.v       # [NEW v3.0] I/O controller tests (38 tests)
 │   ├── mux_ar_tb.v              # Address mux tests (updated: AR_EXT routing, 8 tests)
 │   ├── mux_dr_tb.v              # Data mux tests (updated: io_data/flags paths, 14 tests)
 │   ├── register_x_tb.v          # X register tests
@@ -630,6 +672,7 @@ IAS-Overclockers/
 ├── data_init.py                  # Interactive memory initialization (supports negative values)
 ├── data_bin.txt                  # Generated machine code + initialized memory
 │
+├── .gitignore                    # Ignores __pycache__, *.pyc, *.out, *.vcd
 ├── Makefile                      # Build automation and test targets
 ├── run_cpu_test.sh               # General test runner script
 ├── run_simple_test.sh            # Simple test convenience wrapper
@@ -641,7 +684,7 @@ IAS-Overclockers/
 ### Key Files Explained
 
 - **cpu.v**: Top-level module that interconnects all CPU components
-- **cu.v**: Control unit with 72-state FSM managing instruction execution phases
+- **cu.v**: Control unit with 98-state FSM managing instruction execution phases (including interrupt save/restore)
 - **mining_core.v**: The ASIP extension implementing cryptocurrency mining
 - **main.py**: Assembler that translates `.asm` files to 16-bit binary machine code
 - **data_init.py**: Tool for initializing memory (supports decimal, hex, and negative values)
@@ -656,7 +699,7 @@ IAS-Overclockers/
 
 The project includes comprehensive testing at multiple levels:
 
-**Component Testing (24 Module Testbenches):**
+**Component Testing (27 Module Testbenches):**
 
 - Individual modules tested in isolation (Module-Testing/ directory)
 - Automated test runner script: `run_all_testbenches.sh`
@@ -674,10 +717,13 @@ The project includes comprehensive testing at multiple levels:
 | accumulator_tb.v | 10 | ✓ PASS | |
 | alu_tb.v | 46 | ✓ PASS | |
 | ar_tb.v | 14 | ✓ PASS | Updated: AR_EXT port added |
-| cu_tb.v | 251 | ✓ PASS | |
+| cpu_interrupt_tb.v | 8 | ✓ PASS | **NEW v3.1**: end-to-end interrupt integration (EI→WAIT→ISR→IRET) |
+| cu_interrupt_tb.v | 52 | ✓ PASS | **NEW v3.1**: all 20 interrupt CU states (78–97) + edge cases |
+| cu_tb.v | 251 | ✓ PASS | Updated: INTR_CHECK state in fetch cycle |
 | data_register_tb.v | 26 | ✓ PASS | Updated: io_data/flags ports added |
-| flags_tb.v | 9 | ✓ PASS | |
-| io_controller_tb.v | 34 | ✓ PASS | **NEW v3.0**: kbd, display, timer, mining, IER/IFR |
+| flags_tb.v | 16 | ✓ PASS | Updated: use_packed_flags + lower-bits + priority tests |
+| interrupt_controller_tb.v | 34 | ✓ PASS | **NEW v3.1**: 4-source priority, masking, ack, full priority matrix |
+| io_controller_tb.v | 38 | ✓ PASS | **NEW v3.0**: kbd, display, timer, mining, IER/IFR + edge cases |
 | ir_tb.v | 6 | ✓ PASS | |
 | memory_tb.v | 8 | ✓ PASS | |
 | mining_core_tb.v | 3 | ✓ PASS | |
@@ -694,46 +740,63 @@ The project includes comprehensive testing at multiple levels:
 | rgst_tb.v | 7 | ✓ PASS | |
 | seu_tb.v | 6 | ✓ PASS | |
 | stack_pointer_tb.v | 7 | ✓ PASS | |
-| **Total** | **524** | **✓ PASS** | 24 testbenches, 0 failures |
+| **Total** | **629** | **✓ PASS** | 27 testbenches, 0 failures |
 
-**Control Unit Testing (cu_tb.v):**
+**Control Unit Testing:**
 
-- 251 comprehensive FSM tests covering all 72 states
-- Tests all instruction categories including new extensions:
-  - Memory operations (LD, ST, PUSH X/Y, POP X/Y)
-  - Arithmetic (ADD, SUB, MUL, DIV, MOD with registers and immediates)
-  - Logical operations (AND, OR, XOR, NOT)
-  - Shift and rotate operations (LSL, LSR, RSL, RSR)
-  - Control flow (JMP, BRA, BRZ, BRN, BRC, BRO, BGT, BLT, BGE, BLE, BEQ, BNE, RET, END, NOP)
-  - Register manipulation (MOV, MOVR, INC, DEC)
-  - ASIP extension (MINE)
+- `cu_tb.v`: 251 FSM tests covering all non-interrupt states; updated for INTR_CHECK fetch insertion
+- `cu_interrupt_tb.v`: 52 tests covering all 20 new interrupt states plus edge cases:
+  - EI_1 (set_I=1), DI_1 (clr_I=1)
+  - INTR_CHECK: passes to DECODE when I_flag=0; fires INTR_SAVE_1 when I_flag=1 and intr_pending=1
+  - INTR_SAVE_1–6: FLAGS push, PC push, SP decrement sequence; intr_ack and clr_I verified
+  - INTR_VECTOR: IVT address routing (condAR=11, ivt_mode=1); saved_irq_id capture verified
+  - INTR_JUMP_1–2: ISR address fetch and PC load
+  - IRET_1–7: SP restore, PC pop, FLAGS pop, use_packed_flags and set_I verified
+  - WAIT_1: idles with no signals; exits to INTR_CHECK when intr_pending asserts
+  - Edge cases: WAIT with I_flag=0 stays idle; nested interrupt blocked during save; all 4 irq_id values captured
 
 ### Running Module Tests
 
-Run all 24 module testbenches (including `alu_negative_test_tb.v` and the new `io_controller_tb.v`):
+Run all 27 module testbenches (including `alu_negative_test_tb.v`, `cu_interrupt_tb.v`, `interrupt_controller_tb.v`, `cpu_interrupt_tb.v`):
 
 ```bash
 make modules                                        # from repo root (preferred)
 cd Module-Testing && bash run_all_testbenches.sh    # equivalent, direct
 ```
 
-The script runs all `*_tb.v` files (including `alu_negative_test_tb.v`), prints per-testbench results, and reports a combined PASS/FAIL total. `cpu_tb.v` is excluded — use `make test` (which assembles the program first) to run that testbench.
+The script runs all `*_tb.v` files (including `alu_negative_test_tb.v`, `interrupt_controller_tb.v`, and `cu_interrupt_tb.v`), prints per-testbench results, and reports a combined PASS/FAIL total. `cpu_tb.v` is excluded — use `make test` (which assembles the program first) to run that testbench.
+
+To also run the assembler encoding tests:
+
+```bash
+make asm-test       # assembler test only
+make test-all       # modules + CPU integration + assembler (full suite)
+```
 
 ### Test Output Format
 
 Tests provide detailed feedback:
 
 ```
+Processing: cu_interrupt_tb.v
+Test  1 PASS: EI_1: no ctrl signals (I_flag set internally)
+Test  2 PASS: EI_1: set_I=1, others=0
+...
+Test 19 PASS: INTR_VECTOR: ldAR=1, condAR=11 (IVT address)
+Test 20 PASS: INTR_VECTOR: ivt_mode=1
+...
+Test 39 PASS: INTR_SAVE_1 from WAIT: intr_ack=1, clr_I=1
+-------------------------------------------
+Simulare Finalizata!
+Total Teste:          39
+Teste PASS :          39
+Teste FAIL :           0
+-------------------------------------------
+
 Processing: cu_tb.v
 Test  1 PASS: State LOAD_ADDR: ldAR=1
 Test  2 PASS: State LOAD_INSTR: ldDR=ldIR=incPC=1
 ...
-Test 229 PASS: PUSH_REG_1 (ldAR=1, condAR=01)
-Test 230 PASS: PUSH_REG_2 (ldDR=1, condDR=001 for X)
-Test 231 PASS: PUSH_REG_3 (memWR=1, decSP=1)
-...
-Test 249 PASS: POP_REG_4 Y (ldY=1)
-Test 250 PASS: Return to LOAD_ADDR after POP Y
 Test 251 PASS: State HALT: finish=1
 ---------------------------------------
 Simulare Finalizata!
@@ -784,7 +847,7 @@ This project was developed as a collaborative team effort for the FIC course, de
    - Mining testbench validation
 
 3. ✅ **Testing and Validation**
-   - Comprehensive test suite (24 module testbenches, 524 tests)
+   - Comprehensive test suite (24 module testbenches, 524 tests at v3.0)
    - All instruction categories validated
    - Build automation and toolchain
    - Documentation
@@ -793,18 +856,20 @@ This project was developed as a collaborative team effort for the FIC course, de
    - `io_controller.v`: keyboard, display, timer, mining-result peripherals
    - `IN` / `OUT` instructions (opcodes 38/39, 6 new FSM states 72–77)
    - `ar_out[10]` routing: RAM vs I/O space; `mem_we_gated` prevents spurious RAM writes
-   - `mux_ar` AR_EXT path (`CondAR=2'b11`) for I/O page and future IVT access
+   - `mux_ar` AR_EXT path (`CondAR=2'b11`) for I/O page and IVT access
    - `mux_dr` io_data path (`CondDR=3'b110`) and packed-FLAGS path (`CondDR=3'b111`)
    - Assembler support for `IN port` / `OUT port`
    - 34-test `io_controller_tb.v` covering all peripherals
    - Zero regressions across all 524 tests
 
-5. 🔄 **Interrupt System (v3.1 — In Progress)**
-   - `interrupt_controller.v` (pending)
-   - EI / DI / IRET / WAIT instructions (pending)
-   - CU states 78–97 for interrupt save/restore/return (pending)
-   - `flags.v` `use_packed_flags` path (pending)
-   - IVT at addresses 190–193 (pending)
+5. ✅ **Interrupt System (v3.1 — Complete)**
+   - `interrupt_controller.v`: 4-source priority controller (TIMER > KBD > MINE > EXT); IER masking; intr_ack clears winning latch
+   - EI / DI / IRET / WAIT instructions (opcodes 40/41/58/59)
+   - 20 new CU FSM states 78–97 (INTR_CHECK, save chain, IVT fetch, IRET chain, EI_1, DI_1, WAIT_1)
+   - `flags.v` `use_packed_flags` path for IRET FLAGS restore from `DR[15:12]`
+   - IVT at addresses 190–193; `saved_irq_id` register ensures correct IVT slot after intr_ack
+   - Assembler support for all 4 new instructions; extended test suite covers EI/DI/IRET/WAIT/IN/OUT/branch/immediate encoding
+   - 27 testbenches, 629 tests, 0 failures (includes 52-test `cu_interrupt_tb.v`, 34-test `interrupt_controller_tb.v`, 8-test `cpu_interrupt_tb.v` end-to-end)
 
 ---
 
@@ -830,20 +895,20 @@ The CPU uses a 72-state Finite State Machine (FSM) in the control unit to manage
 
 **State Machine Details:**
 
-- 78 active states (0–77) with states 78–97 reserved for the interrupt system (see Roadmap)
+- 98 active states (0–97):
   - 47 original states (fetch, decode, ALU, memory, branches, stack)
   - 3 for signed division (D_PRE1/D_PRE2, D_POST)
   - 12 for conditional branches (MOVR_1/MOVR_2, NOP_1, BGT/BLT/BGE/BLE with CHECK/TAKE/SKIP)
   - 7 for stack operations (PUSH_REG_1/2/3, POP_REG_1/2/3/4)
   - 3 for BNE instruction (BNE_CHECK/TAKE/SKIP)
-  - **6 new (v3.0)**: IN_1/IN_2/IN_3 (states 72–74) for `IN` instruction; OUT_1/OUT_2/OUT_3 (states 75–77) for `OUT` instruction
-- Conditional branches evaluate flags and update PC accordingly
-- BEQ uses same states as BRZ (alias), BNE has dedicated states
-- Stack operations coordinate SP updates with memory access
-- Division states: D_PRE1/D_PRE2 extract signs, D0-D10 perform SRT4, D_POST applies sign
-- JMP reuses PUSH_1/2/3 states but adds branch in PUSH_3
+  - **6 (v3.0)**: IN_1/IN_2/IN_3 (72–74) for `IN`; OUT_1/OUT_2/OUT_3 (75–77) for `OUT`
+  - **20 (v3.1)**: INTR_CHECK (78); INTR_SAVE_1–6 (79–84); INTR_VECTOR (85); INTR_JUMP_1–2 (86–87); IRET_1–7 (88–94); EI_1 (95); DI_1 (96); WAIT_1 (97)
+- **Fetch cycle (v3.1)**: LOAD_ADDR → LOAD_INSTR → **INTR_CHECK** → DECODE (INTR_CHECK inserted to test `intr_pending & I_flag` every fetch)
 - **IN** instruction: IN_1 loads AR with I/O page address → IN_2 asserts `io_re` and latches `io_data_out` into DR → IN_3 loads A from DR
 - **OUT** instruction: OUT_1 loads AR with I/O page address → OUT_2 loads DR from A → OUT_3 asserts `io_we`
+- **Interrupt save** (INTR_SAVE_1–6 → INTR_VECTOR → INTR_JUMP_1–2): pushes packed FLAGS then PC onto stack; reads IVT slot; jumps to ISR; `clr_I` auto-disables interrupts; `intr_ack` clears the winning IRQ latch; `saved_irq_id` captures `irq_id` before ack clears it
+- **IRET** (IRET_1–7): pops PC then packed FLAGS from stack; `set_I` re-enables interrupts; `use_packed_flags` restores Z/N/C/O from DR[15:12]
+- **WAIT_1**: asserts no control signals; loops until `intr_pending` then transitions to INTR_CHECK
 
 ### Memory Organization
 
@@ -946,12 +1011,7 @@ These are intentional design choices for the educational scope of the project:
    - Not suitable for production cryptocurrency mining
    - Demonstrates ASIP concepts effectively
 
-4. **Interrupt System Incomplete** (in progress — see Roadmap)
-   - `io_controller.v` exposes `kbd_irq`, `timer_irq`, `mining_irq` outputs but the interrupt controller and CU states are not yet wired
-   - `EI`, `DI`, `IRET`, `WAIT` instructions not yet implemented
-   - Programs currently run to completion without asynchronous interruption
-
-5. **No Pipelining**: Simple fetch-decode-execute cycle
+4. **No Pipelining**: Simple fetch-decode-execute cycle
    - Instructions execute sequentially (not in parallel)
    - Easier to understand and verify
    - Opportunities for future optimization
@@ -962,56 +1022,15 @@ These are intentional design choices for the educational scope of the project:
 
 ---
 
-## Roadmap — Interrupt System (v3.1, In Progress)
+## Completed Features Summary
 
-The MMIO foundation is complete. The next phase implements the full interrupt system as specified in `IO_Implementare_Plan.md`. All infrastructure is already in place (I/O controller IRQ outputs, `AR_EXT` mux, `mux_dr` packed-flags case, `ivt_mode` wire).
-
-### What Remains
-
-**New modules:**
-
-| File | Purpose |
-|------|---------|
-| `CPU/interrupt_controller.v` | 4-source priority encoder (TIMER > KBD > MINE > EXT); masks against IER and I_flag; clears winning source on `intr_ack` |
-
-**Modified files:**
-
-| File | Change Needed |
-|------|--------------|
-| `CPU/flags.v` | Add `use_packed_flags` input — on IRET restore, unpack `direct_value[15:12]` as `{Z,N,C,O}` |
-| `CPU/cu.v` | Add 20 new states (78–97): `INTR_CHECK`, `INTR_SAVE_1..6`, `INTR_VECTOR`, `INTR_JUMP_1/2`, `IRET_1..7`, `EI_1`, `DI_1`, `WAIT_1`; add `I_flag` register; add `OP_EI/OP_DI/OP_IRET/OP_WAIT` opcodes; change `LOAD_INSTR → INTR_CHECK` (was `→ DECODE`) |
-| `CPU/cpu.v` | Wire `interrupt_controller`; connect `irq_id` to `ar_ext_in` when `ivt_mode=1` (`ar_ext_in = 16'd190 + {14'b0, irq_id}`); expose `ext_irq` input |
-| `CPU-Assembler/main.py` | Add `EI`(40), `DI`(41), `IRET`(58), `WAIT`(59) opcodes (all zero-operand) |
-
-**Interrupt Vector Table (IVT):**
-
-Pre-loaded at addresses 190–193 (just below data region at 200):
-
-| Address | Source | Content |
-|---------|--------|---------|
-| 190 | TIMER | Address of TIMER ISR |
-| 191 | KBD   | Address of KBD ISR   |
-| 192 | MINE  | Address of MINE ISR  |
-| 193 | EXT   | Address of EXT ISR   |
-
-**New instructions:**
-
-| Mnemonic | Opcode   | Description |
-|----------|----------|-------------|
-| `EI`     | `101000` | Enable interrupts (`I_flag = 1`) |
-| `DI`     | `101001` | Disable interrupts (`I_flag = 0`) |
-| `IRET`   | `111010` | Return from interrupt (pop PC then FLAGS, re-enable interrupts) |
-| `WAIT`   | `111011` | Halt CPU until interrupt fires (ARM WFI equivalent) |
-
-**Context save/restore on interrupt:**
-
-Automatically pushes FLAGS then PC onto stack on entry; `IRET` pops PC then FLAGS. FLAGS are packed as `{Z,N,C,O,12'b0}` in a 16-bit word. `I_flag` is cleared on interrupt entry and restored on `IRET`.
-
-**New testbenches needed:**
-
-- `Module-Testing/interrupt_controller_tb.v` — 4-source priority, IER masking, intr_ack
-- `Module-Testing/cu_interrupt_tb.v` — all 20 new states (78–97), WAIT loop behavior
-- `Demo-Programs/io_interrupt_demo.asm` — EI + WAIT + ISR that reads kbd/mining results
+| Version | Feature | Details |
+|---------|---------|---------|
+| v1.0 | General Purpose Processor | 16-bit von Neumann, 29-instruction ISA, ALU, FSM |
+| v2.0 | Instruction Extensions | JMP, PUSH/POP X/Y, MOVR, BGT/BLT/BGE/BLE/BEQ/BNE, NOP |
+| v2.1 | ASIP Mining Extension | SHA-256-based MINE instruction, mining core |
+| v3.0 | Memory-Mapped I/O | IN/OUT instructions, io_controller, FSM states 72–77 |
+| v3.1 | Interrupt System | EI/DI/IRET/WAIT, interrupt_controller, FSM states 78–97 |
 
 ---
 

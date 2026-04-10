@@ -1,14 +1,11 @@
 def test_assembler(expected_file, output_file="output.txt"):
-    #compara 2 fisiere si zice la ce linie e diferit
-    #citesc fisierul de output de la main.py
+    # Compare assembler output against expected file; report first differing line
     with open(output_file) as f:
         result_lines = [line.strip() for line in f.readlines() if line.strip()]
 
-    # citesc fisierul pe care il dau eu ca expected
     with open(expected_file) as f:
         expected_lines = [line.strip() for line in f.readlines() if line.strip()]
 
-        # daca am nr de linii diferit ies
         if len(expected_lines) != len(result_lines):
             print(f"[FAIL] Numar diferit de linii!")
             print(f"  Expected lines: {len(expected_lines)}")
@@ -32,5 +29,4 @@ def test_assembler(expected_file, output_file="output.txt"):
         else:
             print("[FAIL] Test failed ❌")
 
-test_assembler("expected_output2.txt" )
-#aici ii dam noi fisierul expected in functie de ca input dam in main.py
+test_assembler("expected_output2.txt")

@@ -1,0 +1,11 @@
+# Python bytecode cache
+__pycache__/
+*.pyc
+
+# Simulation outputs
+*.out
+*.vcd
+
+# Assembler intermediate output
+CPU-Assembler/output*.txt
+data_bin_temp.txt

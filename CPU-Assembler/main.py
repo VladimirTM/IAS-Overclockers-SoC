@@ -26,8 +26,13 @@ OPCODE = {
     "NOP": '100010',
     "PUSH": '100011', "POP": '100100',
     "BNE": '100101',  # Branch if Not Equal (Z==0)
-    "IN":  '100110',  # Read I/O port → A
-    "OUT": '100111',  # Write A → I/O port
+    "IN":   '100110',  # Read I/O port → A
+    "OUT":  '100111',  # Write A → I/O port
+    # Interrupt instructions (v3.1)
+    "EI":   '101000',  # Enable interrupts
+    "DI":   '101001',  # Disable interrupts
+    "IRET": '111010',  # Return from interrupt
+    "WAIT": '111011',  # Halt until interrupt
     # Immediate value operations
     "MOVI": '111001',
     "ADDI": '101010', "SUBI": '101011', "MULI": '101100',
@@ -40,7 +45,7 @@ OPCODE = {
 MEMORY_SIZE = 1024  # Total memory lines in output file
 
 # Opcode groups by encoding format
-_OP_NO_OPERAND = {0, 9, 28, 34}                          # END, RET, MINE, NOP
+_OP_NO_OPERAND = {0, 9, 28, 34, 40, 41, 58, 59}           # END, RET, MINE, NOP, EI, DI, IRET, WAIT
 _OP_MEMORY     = {1, 2}                                   # LD, ST
 _OP_IO         = {38, 39}                                 # IN, OUT
 _OP_BRANCH     = {3, 4, 5, 6, 7, 8, 30, 31, 32, 33, 37} # BRA/BRZ/BRN/BRC/BRO/JMP/BGT/BLT/BGE/BLE/BNE

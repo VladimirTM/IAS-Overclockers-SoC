@@ -44,23 +44,31 @@ module cu (
     // I/O control signals
     output reg io_we,
     output reg io_re,
-    output reg ivt_mode
+    output reg ivt_mode,
+    // Interrupt system
+    input        intr_pending,
+    input  [1:0] irq_id,
+    output reg       intr_ack,
+    output reg       set_I,
+    output reg       clr_I,
+    output reg       use_packed_flags,
+    output reg [1:0] saved_irq_id
 );
 
     // ---- Opcodes (6-bit) ----
-    // Control / memory
+    // Control / Memory
     localparam OP_HALT  = 6'b000000, OP_LOAD  = 6'b000001, OP_STORE = 6'b000010;
     localparam OP_PUSH  = 6'b001000, OP_RET   = 6'b001001;
     localparam OP_MOV   = 6'b011001, OP_MOVI  = 6'b111001;
     localparam OP_NOP   = 6'b100010;
     localparam OP_PUSH_REG = 6'b100011, OP_POP_REG = 6'b100100;
     localparam OP_MOVR  = 6'b011101;
-    // Branch (register-operand forms)
+    // Branches
     localparam OP_BRA   = 6'b000011, OP_BRZ   = 6'b000100, OP_BRN   = 6'b000101;
     localparam OP_BRC   = 6'b000110, OP_BRO   = 6'b000111;
     localparam OP_BGT   = 6'b011110, OP_BLT   = 6'b011111;
     localparam OP_BGE   = 6'b100000, OP_BLE   = 6'b100001, OP_BNE   = 6'b100101;
-    // ALU register (opcode[5]==0) / immediate (opcode[5]==1)
+    // ALU — register (opcode[5]=0) / immediate (opcode[5]=1)
     localparam OP_ADD   = 6'b001010, OP_SUB   = 6'b001011, OP_MUL   = 6'b001100, OP_DIV   = 6'b001101;
     localparam OP_MOD   = 6'b001110, OP_LSL   = 6'b001111, OP_LSR   = 6'b010000, OP_RSR   = 6'b010001;
     localparam OP_RSL   = 6'b010010, OP_AND   = 6'b010011, OP_OR    = 6'b010100, OP_XOR   = 6'b010101;
@@ -75,6 +83,11 @@ module cu (
     // I/O instructions (v3.0)
     localparam OP_IN    = 6'b100110;  // Read I/O port → A
     localparam OP_OUT   = 6'b100111;  // Write A → I/O port
+    // Interrupt instructions (v3.1)
+    localparam OP_EI    = 6'b101000;  // Enable interrupts
+    localparam OP_DI    = 6'b101001;  // Disable interrupts
+    localparam OP_IRET  = 6'b111010;  // Return from interrupt
+    localparam OP_WAIT  = 6'b111011;  // Halt until interrupt
 
     // ---- FSM State Encoding ----
     // ---- Fetch / Decode ----
@@ -113,9 +126,35 @@ module cu (
     // ---- I/O (v3.0) ----
     localparam IN_1  = 72, IN_2  = 73, IN_3  = 74;   // IN:  AR←port, DR←io_data, A←DR
     localparam OUT_1 = 75, OUT_2 = 76, OUT_3 = 77;   // OUT: AR←port, DR←A, io_we
-    // States 78–97 reserved for interrupt system (v3.1)
+    // ---- Interrupt system (v3.1) ----
+    localparam INTR_CHECK  = 78;  // inserted between LOAD_INSTR and DECODE
+    localparam INTR_SAVE_1 = 79, INTR_SAVE_2 = 80, INTR_SAVE_3 = 81;  // context save
+    localparam INTR_SAVE_4 = 82, INTR_SAVE_5 = 83, INTR_SAVE_6 = 84;
+    localparam INTR_VECTOR = 85;  // AR ← IVT[irq_id]
+    localparam INTR_JUMP_1 = 86, INTR_JUMP_2 = 87;   // fetch ISR addr, jump
+    localparam IRET_1 = 88, IRET_2 = 89, IRET_3 = 90;  // restore context
+    localparam IRET_4 = 91, IRET_5 = 92, IRET_6 = 93, IRET_7 = 94;
+    localparam EI_1   = 95;  // I_flag ← 1
+    localparam DI_1   = 96;  // I_flag ← 0
+    localparam WAIT_1 = 97;  // idle until intr_pending
 
     reg [6:0] state, next_state;
+
+    // I_flag: set by EI/IRET_7, cleared by DI/INTR_SAVE_1
+    reg I_flag;
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n)      I_flag <= 1'b0;
+        else if (clr_I)  I_flag <= 1'b0;
+        else if (set_I)  I_flag <= 1'b1;
+    end
+
+    // Capture irq_id before intr_ack clears the source latch
+    reg [1:0] saved_irq_id_r;
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) saved_irq_id_r <= 2'd0;
+        else if (state == INTR_SAVE_1) saved_irq_id_r <= irq_id;
+    end
+    always @(*) saved_irq_id = saved_irq_id_r;
 
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n)
@@ -133,7 +172,14 @@ module cu (
             end
 
             LOAD_INSTR: begin
-                next_state = DECODE;
+                next_state = INTR_CHECK;
+            end
+
+            INTR_CHECK: begin
+                if (intr_pending & I_flag)
+                    next_state = INTR_SAVE_1;
+                else
+                    next_state = DECODE;
             end
 
             DECODE: begin
@@ -177,6 +223,10 @@ module cu (
                     OP_BNE:   next_state = BNE_CHECK;
                     OP_IN:    next_state = IN_1;
                     OP_OUT:   next_state = OUT_1;
+                    OP_EI:    next_state = EI_1;
+                    OP_DI:    next_state = DI_1;
+                    OP_IRET:  next_state = IRET_1;
+                    OP_WAIT:  next_state = WAIT_1;
 
                     default:  next_state = LOAD_ADDR;
                 endcase
@@ -343,6 +393,38 @@ module cu (
             OUT_2: next_state = OUT_3;
             OUT_3: next_state = LOAD_ADDR;
 
+            // ---- Interrupt save sequence ----
+            INTR_SAVE_1: next_state = INTR_SAVE_2;
+            INTR_SAVE_2: next_state = INTR_SAVE_3;
+            INTR_SAVE_3: next_state = INTR_SAVE_4;
+            INTR_SAVE_4: next_state = INTR_SAVE_5;
+            INTR_SAVE_5: next_state = INTR_SAVE_6;
+            INTR_SAVE_6: next_state = INTR_VECTOR;
+            INTR_VECTOR: next_state = INTR_JUMP_1;
+            INTR_JUMP_1: next_state = INTR_JUMP_2;
+            INTR_JUMP_2: next_state = LOAD_ADDR;
+
+            // ---- IRET: restore context ----
+            IRET_1: next_state = IRET_2;
+            IRET_2: next_state = IRET_3;
+            IRET_3: next_state = IRET_4;
+            IRET_4: next_state = IRET_5;
+            IRET_5: next_state = IRET_6;
+            IRET_6: next_state = IRET_7;
+            IRET_7: next_state = LOAD_ADDR;
+
+            // ---- EI / DI ----
+            EI_1:  next_state = LOAD_ADDR;
+            DI_1:  next_state = LOAD_ADDR;
+
+            // ---- WAIT: idle until interrupt ----
+            WAIT_1: begin
+                if (intr_pending)
+                    next_state = INTR_CHECK;
+                else
+                    next_state = WAIT_1;
+            end
+
             default: next_state = LOAD_ADDR;
         endcase
     end
@@ -383,6 +465,10 @@ module cu (
         io_we = 0;
         io_re = 0;
         ivt_mode = 0;
+        intr_ack = 0;
+        set_I = 0;
+        clr_I = 0;
+        use_packed_flags = 0;
 
         case (state)
             // ==== FETCH / DECODE ====
@@ -444,13 +530,11 @@ module cu (
             // ==== BRANCHES ====
             BRA_1: begin
                 ldPC = 1;
-                ldPCfromDR = 0;
             end
 
             BRZ_TAKE, BRN_TAKE, BRC_TAKE, BRO_TAKE,
             BGT_TAKE, BLT_TAKE, BGE_TAKE, BLE_TAKE, BNE_TAKE: begin
                 ldPC = 1;
-                ldPCfromDR = 0;
             end
 
             BRZ_SKIP, BRN_SKIP, BRC_SKIP, BRO_SKIP,
@@ -526,7 +610,6 @@ module cu (
 
             ALU_GET_FLAGS_ONLY: begin
                 if (!alu_exc) begin
-                    ldA = 0;
                     ldFLAG = 1;
                 end
             end
@@ -671,6 +754,91 @@ module cu (
             OUT_1: begin ldAR = 1; condAR = 2'b11; end  // AR ← I/O page
             OUT_2: begin ldDR = 1; condDR = 3'b101; end // DR ← A
             OUT_3: begin io_we = 1; end
+
+            // ==== INTERRUPT CONTEXT SAVE ====
+            INTR_SAVE_1: begin
+                intr_ack = 1;           // clear winning IRQ latch
+                clr_I    = 1;           // disable interrupts during ISR
+                ldAR     = 1;
+                condAR   = 2'b01;       // AR ← SP
+            end
+            INTR_SAVE_2: begin
+                ldDR   = 1;
+                condDR = 3'b111;        // DR ← packed FLAGS
+            end
+            INTR_SAVE_3: begin
+                memWR = 1;
+                decSP = 1;              // mem[SP] ← FLAGS, SP--
+            end
+            INTR_SAVE_4: begin
+                ldAR   = 1;
+                condAR = 2'b01;         // AR ← SP
+            end
+            INTR_SAVE_5: begin
+                ldDR   = 1;
+                condDR = 3'b011;        // DR ← PC
+            end
+            INTR_SAVE_6: begin
+                memWR = 1;
+                decSP = 1;              // mem[SP] ← PC, SP--
+            end
+            INTR_VECTOR: begin
+                ldAR     = 1;
+                condAR   = 2'b11;       // AR ← IVT[saved_irq_id]
+                ivt_mode = 1;
+            end
+            INTR_JUMP_1: begin
+                ldDR   = 1;
+                condDR = 3'b000;        // DR ← IVT entry
+            end
+            INTR_JUMP_2: begin
+                ldPC       = 1;
+                ldPCfromDR = 1;         // PC ← ISR address
+            end
+
+            // ==== IRET CONTEXT RESTORE ====
+            IRET_1: begin
+                incSP = 1;              // SP++ → saved PC
+            end
+            IRET_2: begin
+                ldAR   = 1;
+                condAR = 2'b01;         // AR ← SP
+            end
+            IRET_3: begin
+                ldDR   = 1;
+                condDR = 3'b000;        // DR ← saved PC
+            end
+            IRET_4: begin
+                ldPC       = 1;
+                ldPCfromDR = 1;         // PC ← DR
+                incSP      = 1;         // SP++ → saved FLAGS
+            end
+            IRET_5: begin
+                ldAR   = 1;
+                condAR = 2'b01;         // AR ← SP
+            end
+            IRET_6: begin
+                ldDR   = 1;
+                condDR = 3'b000;        // DR ← saved FLAGS
+            end
+            IRET_7: begin
+                ldFLAG        = 1;
+                use_packed_flags = 1;   // restore Z/N/C/O from DR[15:12]
+                set_I         = 1;      // re-enable interrupts
+            end
+
+            // ==== EI / DI ====
+            EI_1: begin
+                set_I = 1;
+            end
+            DI_1: begin
+                clr_I = 1;
+            end
+
+            // ==== WAIT ====
+            WAIT_1: begin
+                // CPU idles, all state held
+            end
         endcase
     end
 

@@ -11,7 +11,7 @@ wire [16:0] carryIntermediar;
 generate
   genvar i;
   for(i = 0; i < 17; i = i + 1) begin : vect
-    if(i == 0) // cazul initial in care cin este cin de la intrare
+    if(i == 0) // first bit: carry-in from module input
       fac FAC0(
         .x(x[0]),
         .y(y[0]),
@@ -19,7 +19,7 @@ generate
         .z(z[0]),
         .cout(carryIntermediar[0])
       );
-    else // in rest cin actual este cout anterior
+    else // remaining bits: carry ripples from previous stage
       fac FAC(
         .x(x[i]),
         .y(y[i]),
@@ -30,6 +30,6 @@ generate
   end
 endgenerate
 
-assign cout = carryIntermediar[16]; // asignez valoarea lui cout final
+assign cout = carryIntermediar[16]; // final carry-out
 
 endmodule

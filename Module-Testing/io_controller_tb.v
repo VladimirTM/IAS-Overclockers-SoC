@@ -439,6 +439,67 @@ module io_controller_tb;
         @(posedge clk); #1; io_re = 1'b0;
 
         // ================================================================
+        // SECTIUNEA 9: Timer disable mid-count — irq must NOT fire
+        // ================================================================
+        $display("--- Timer disable mid-count ---");
+
+        timer_irq_seen = 1'b0;
+
+        // Set period = 20
+        @(negedge clk);
+        io_addr    = 10'd33;
+        io_data_in = 16'h0014;  // period = 20
+        io_we      = 1'b1; io_re = 1'b0;
+        @(posedge clk); #1; io_we = 1'b0;
+
+        // Enable timer one-shot
+        @(negedge clk);
+        io_addr    = 10'd32;
+        io_data_in = 16'h0001;  // enable=1, periodic=0
+        io_we      = 1'b1; io_re = 1'b0;
+        @(posedge clk); #1; io_we = 1'b0;
+
+        // Wait 10 cycles (half the period), then disable
+        repeat(10) @(posedge clk);
+
+        @(negedge clk);
+        io_addr    = 10'd32;
+        io_data_in = 16'h0000;  // disable timer
+        io_we      = 1'b1; io_re = 1'b0;
+        @(posedge clk); #1; io_we = 1'b0;
+
+        // Wait 30 more cycles — timer should NOT fire (was disabled)
+        repeat(30) @(posedge clk);
+        #1;
+
+        check("Timer disabled mid-count: timer_irq_seen = 0", timer_irq_seen === 1'b0);
+
+        // ================================================================
+        // SECTIUNEA 10: MINE_NONCE read (port 65) also clears mining_irq
+        // ================================================================
+        $display("--- MINE_NONCE clears mining_irq ---");
+
+        // Trigger mining_done pulse
+        @(negedge clk);
+        mining_hash_in  = 16'hABCD;
+        mining_nonce_in = 16'h5678;
+        mining_done_in  = 1'b1;
+        @(posedge clk); #1;
+
+        check("MINE: mining_irq set after done pulse", mining_irq === 1'b1);
+
+        mining_done_in = 1'b0;
+
+        // Read MINE_NONCE (port 65) — should clear mining_irq
+        @(negedge clk);
+        io_addr = 10'd65; io_re = 1'b1; #5;
+        check("MINE_NONCE read: data correct (0x5678)", io_data_out === 16'h5678);
+        @(posedge clk); #1; io_re = 1'b0;
+
+        @(negedge clk); #1;
+        check("MINE_NONCE read clears mining_irq", mining_irq === 1'b0);
+
+        // ================================================================
         // Raport Final
         // ================================================================
         $display("---------------------------------------");

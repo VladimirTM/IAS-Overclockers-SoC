@@ -138,6 +138,13 @@ simple:
 modules:
 	@cd $(TB_DIR) && bash run_all_testbenches.sh
 
+# Run assembler unit tests (extended suite — self-contained)
+# Note: assembler_test.py (original) is a manual diff tool — run it separately after 'make assemble'
+.PHONY: asm-test
+asm-test:
+	@echo "--- Assembler test (extended: EI/DI/IRET/WAIT/IN/OUT/branches/immediates) ---"
+	@cd CPU-Assembler && python3 assembler_test_extended.py
+
 # Run module tests then CPU integration test, with a combined summary
 .PHONY: test-all
 test-all:
@@ -152,16 +159,22 @@ test-all:
 	 cpu_pass=$$(echo "$$cpu_out" | grep "^  Pass:" | grep -oE '[0-9]+$$'); \
 	 cpu_fail=$$(echo "$$cpu_out" | grep "^  Fail:" | grep -oE '[0-9]+$$'); \
 	 cpu_pass=$${cpu_pass:-0}; cpu_fail=$${cpu_fail:-0}; \
+	 echo ""; \
+	 echo "--- Assembler test (extended) ---"; \
+	 asm_fail=0; \
+	 cd CPU-Assembler && python3 assembler_test_extended.py || asm_fail=$$((asm_fail+1)); \
+	 cd ..; \
 	 total_pass=$$((mod_pass + cpu_pass)); \
-	 total_fail=$$((mod_fail + cpu_fail)); \
+	 total_fail=$$((mod_fail + cpu_fail + asm_fail)); \
 	 echo ""; \
 	 echo "========================================"; \
 	 echo "           COMBINED SUMMARY             "; \
 	 echo "========================================"; \
 	 printf "  Module tests    %4d pass  %2d fail\n" $$mod_pass $$mod_fail; \
 	 printf "  CPU integration %4d pass  %2d fail\n" $$cpu_pass $$cpu_fail; \
+	 printf "  Assembler tests    2 suites  %2d fail\n" $$asm_fail; \
 	 echo "  ----------------------------------------"; \
-	 printf "  Total           %4d pass  %2d fail\n" $$total_pass $$total_fail; \
+	 printf "  Total (Verilog) %4d pass  %2d fail\n" $$total_pass $$total_fail; \
 	 if [ "$$total_fail" -eq 0 ]; then \
 	   echo "  Result: ALL TESTS PASSED!"; \
 	 else \
@@ -206,7 +219,8 @@ help:
 	@echo "  make test ASM=file.asm TB=testbench.v  - Test with both custom"
 	@echo ""
 	@echo "  make modules                           - Run all module unit testbenches"
-	@echo "  make test-all                          - Run module tests then CPU integration test"
+	@echo "  make asm-test                          - Run assembler tests (original + extended)"
+	@echo "  make test-all                          - Run module + CPU integration + assembler tests"
 	@echo ""
 	@echo "  make simple                            - Simple test (shows register dump)"
 	@echo "  make simple ASM=file.asm               - Simple test with custom ASM file"

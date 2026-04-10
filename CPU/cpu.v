@@ -48,20 +48,26 @@ module cpu (
     // I/O control signals from CU
     wire io_we_cu, io_re, ivt_mode;
 
+    // Interrupt system wires
+    wire        intr_pending;
+    wire [1:0]  irq_id;
+    wire        intr_ack, set_I, clr_I, use_packed_flags;
+    wire [1:0]  saved_irq_id_w;
+
     // MMIO routing: ar_out[10]=1 → I/O space, =0 → RAM
     wire io_access    = ar_out[10];
-    wire mem_we_gated = memWR & ~io_access;           // suppress RAM write on I/O address
+    wire mem_we_gated = memWR & ~io_access;
     wire io_we_sig    = io_we_cu | (memWR & io_access);
 
-    // AR_EXT for condAR=2'b11: sets bit10=1 (I/O page), low 10 bits from IR operand
-    wire [15:0] ar_ext_in = {5'b00001, ir_out[9:0]};
+    // AR_EXT: I/O page (ivt_mode=0) or IVT[saved_irq_id] (ivt_mode=1)
+    wire [15:0] ar_ext_in = ivt_mode ? (16'd190 + {14'b0, saved_irq_id_w})
+                                      : {5'b00001, ir_out[9:0]};
 
-    // IRQ lines unused until interrupt_controller added (v3.1)
     wire [15:0] io_data_out_w;
     wire        kbd_irq_w, timer_irq_w, mining_irq_w;
     wire [3:0]  ier_out_w;
 
-    // Source for flags in direct mode: MOVR uses IR register fields, INC/DEC use X/Y, else DR
+    // direct_flag: MOVR→IR[7:6] source, INC/DEC→X/Y, default→DR
     wire [15:0] direct_flag_value;
     assign direct_flag_value = use_movr_flags ?
                                (ir_out[7:6] == 2'b00 ? A_out :
@@ -168,6 +174,7 @@ module cpu (
         .alu_carry(alu_carry),
         .alu_overflow(alu_overflow),
         .use_direct_value(use_direct_flag),
+        .use_packed_flags(use_packed_flags),
         .direct_value(direct_flag_value),
         .Z(Z_flag),
         .N(N_flag),
@@ -263,6 +270,20 @@ module cpu (
         .ier_out(ier_out_w)
     );
 
+    interrupt_controller intr_ctrl_inst (
+        .clk(clk),
+        .rst_n(rst_n),
+        .timer_irq(timer_irq_w),
+        .kbd_irq(kbd_irq_w),
+        .mining_irq(mining_irq_w),
+        .ext_irq(ext_irq),
+        .ier(ier_out_w),
+        .I_flag(cu_inst.I_flag),    // hierarchical ref (simulation only)
+        .intr_ack(intr_ack),
+        .intr_pending(intr_pending),
+        .irq_id(irq_id)
+    );
+
     cu cu_inst (
         .clk(clk),
         .rst_n(rst_n),
@@ -307,7 +328,14 @@ module cpu (
         .finish(finish),
         .io_we(io_we_cu),
         .io_re(io_re),
-        .ivt_mode(ivt_mode)
+        .ivt_mode(ivt_mode),
+        .intr_pending(intr_pending),
+        .irq_id(irq_id),
+        .intr_ack(intr_ack),
+        .set_I(set_I),
+        .clr_I(clr_I),
+        .use_packed_flags(use_packed_flags),
+        .saved_irq_id(saved_irq_id_w)
     );
 
     reg halt_msg_printed;

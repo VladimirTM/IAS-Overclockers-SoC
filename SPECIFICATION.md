@@ -446,108 +446,99 @@ graph LR
 ### 5.3 Diagrama de stări FSM (Unitatea de control)
 ```mermaid
 stateDiagram-v2
+
     [*] --> FETCH
 
     state FETCH {
-        [*] --> LOAD_ADDR
-        LOAD_ADDR --> LOAD_INSTR : ldAR←PC
-        LOAD_INSTR --> INTR_CHECK : fetch done, PC++
+        [*]        --> LOAD_ADDR
+        LOAD_ADDR  --> LOAD_INSTR : ldAR←PC
+        LOAD_INSTR --> [*]        : PC++
     }
 
-    state INTR_CHECK {
-        [*] --> check
-        check --> INTERRUPT_SAVE : intr_pending & I_flag
-        check --> DECODE : else
-    }
-
-    state DECODE {
-        [*] --> dispatch
-        note right of dispatch
-            Decode opcode[5:0]
-            dispatch la grupul de execuție
-        end note
-    }
+    FETCH --> INTR_CHECK
+    INTR_CHECK --> DECODE         : I_flag=0 / no IRQ
+    INTR_CHECK --> INTERRUPT_SAVE : intr_pending AND I_flag=1
 
     state MEMORY_OPS {
-        [*] --> LOAD_1
-        LOAD_1 --> LOAD_2 : ldAR←IMM
-        LOAD_2 --> LOAD_3 : ldDR←mem
-        LOAD_3 --> [*] : ldX/Y
-
-        [*] --> STORE_1
-        STORE_1 --> STORE_2 : ldAR←IMM
+        [*]     --> MEM_SEL
+        MEM_SEL --> LOAD_1  : LD
+        MEM_SEL --> STORE_1 : ST
+        LOAD_1  --> LOAD_2
+        LOAD_2  --> LOAD_3  : ldDR←mem
+        LOAD_3  --> [*]     : ldX/Y
+        STORE_1 --> STORE_2
         STORE_2 --> STORE_3 : ldDR←X/Y
-        STORE_3 --> [*] : memWR
+        STORE_3 --> [*]     : memWR
     }
 
     state BRANCH_OPS {
-        [*] --> CHECK_FLAG
+        [*]        --> CHECK_FLAG
         CHECK_FLAG --> TAKE_BRANCH : condiție adevărată
-        CHECK_FLAG --> SKIP : condiție falsă
+        CHECK_FLAG --> SKIP        : condiție falsă
         TAKE_BRANCH --> [*] : ldPC←imm
-        SKIP --> [*]
+        SKIP        --> [*]
     }
 
     state STACK_OPS {
-        [*] --> PUSH_1
+        [*]       --> STACK_SEL
+        STACK_SEL --> PUSH_1 : PUSH
+        STACK_SEL --> POP_1  : POP/RET
         PUSH_1 --> PUSH_2
         PUSH_2 --> PUSH_3 : memWR, decSP
-
-        [*] --> POP_1
-        POP_1 --> POP_2 : incSP
-        POP_2 --> POP_3
-        POP_3 --> POP_4
-        POP_4 --> POP_5 : ldPC
+        PUSH_3 --> [*]
+        POP_1  --> POP_2 : incSP
+        POP_2  --> POP_3
+        POP_3  --> POP_4
+        POP_4  --> POP_5 : ldPC
+        POP_5  --> [*]
     }
 
     state ALU_OPS {
-        [*] --> ALU_LOAD_OPC
+        [*]          --> ALU_LOAD_OPC
         ALU_LOAD_OPC --> ALU_LOAD_OP1
         ALU_LOAD_OP1 --> ALU_LOAD_OP2
         ALU_LOAD_OP2 --> ALU_WAIT
-        ALU_WAIT --> ALU_WAIT : alu_end=0
-        ALU_WAIT --> ALU_GET_RESULT : alu_end=1
-        ALU_GET_RESULT --> [*] : ldA, ldFLAG (sau doar FLAGS pt CMP/TST)
+        ALU_WAIT     --> ALU_WAIT       : alu_end=0
+        ALU_WAIT     --> ALU_GET_RESULT : alu_end=1
+        ALU_GET_RESULT --> [*] : ldA, ldFLAG
     }
 
     state REGISTER_OPS {
-        [*] --> MOV_1
-        MOV_1 --> MOV_2 : ldDR←IMM
-        MOV_2 --> [*] : ldX/Y, ldFLAG
-
-        [*] --> MOVI
-        MOVI --> [*] : ldA←imm (sign-ext)
-
-        [*] --> INC_DEC
-        INC_DEC --> [*] : incr/decr X/Y, ldFLAG
-
-        [*] --> MOVR_1
-        MOVR_1 --> MOVR_2 : ldDR←src
-        MOVR_2 --> [*] : ldDst
+        [*]     --> REG_SEL
+        REG_SEL --> MOV_1   : MOV
+        REG_SEL --> MOVI    : MOVI
+        REG_SEL --> INC_DEC : INC/DEC
+        REG_SEL --> MOVR_1  : MOVR
+        MOV_1   --> MOV_2
+        MOV_2   --> [*]  : ldX/Y, ldFLAG
+        MOVI    --> [*]  : ldA←imm
+        INC_DEC --> [*]  : ldFLAG
+        MOVR_1  --> MOVR_2
+        MOVR_2  --> [*]  : ldDst
     }
 
     state MINING_OPS {
-        [*] --> MINE_START
-        MINE_START --> MINE_WAIT : mining_start
-        MINE_WAIT --> MINE_WAIT : mining_done=0
-        MINE_WAIT --> MINE_GET_RESULT : mining_done=1
+        [*]        --> MINE_START
+        MINE_START --> MINE_WAIT       : mining_start
+        MINE_WAIT  --> MINE_WAIT       : mining_done=0
+        MINE_WAIT  --> MINE_GET_RESULT : mining_done=1
         MINE_GET_RESULT --> [*] : ldA←hash, ldX←nonce
     }
 
     state IO_OPS {
-        [*] --> IN_1
-        IN_1 --> IN_2 : ldAR←port
-        IN_2 --> IN_3 : io_re, ldDR←io_data
-        IN_3 --> [*] : ldA←DR
-
-        [*] --> OUT_1
-        OUT_1 --> OUT_2 : ldAR←port
+        [*]   --> IO_SEL
+        IO_SEL --> IN_1  : IN
+        IO_SEL --> OUT_1 : OUT
+        IN_1  --> IN_2
+        IN_2  --> IN_3  : io_re, ldDR←io_data
+        IN_3  --> [*]   : ldA←DR
+        OUT_1 --> OUT_2
         OUT_2 --> OUT_3 : ldDR←A
-        OUT_3 --> [*] : io_we
+        OUT_3 --> [*]   : io_we
     }
 
     state INTERRUPT_SAVE {
-        [*] --> INTR_SAVE_1
+        [*]         --> INTR_SAVE_1
         INTR_SAVE_1 --> INTR_SAVE_2 : intr_ack, clr_I
         INTR_SAVE_2 --> INTR_SAVE_3 : ldDR←FLAGS_packed
         INTR_SAVE_3 --> INTR_SAVE_4 : memWR, decSP
@@ -556,50 +547,45 @@ stateDiagram-v2
         INTR_SAVE_6 --> INTR_VECTOR : memWR, decSP
         INTR_VECTOR --> INTR_JUMP_1 : AR←190+irq_id
         INTR_JUMP_1 --> INTR_JUMP_2 : DR←mem[IVT]
-        INTR_JUMP_2 --> [*] : ldPC←DR (jump la ISR)
+        INTR_JUMP_2 --> [*]         : ldPC←DR
     }
 
     state INTERRUPT_RESTORE {
-        [*] --> IRET_1
+        [*]    --> IRET_1
         IRET_1 --> IRET_2 : incSP
         IRET_2 --> IRET_3
-        IRET_3 --> IRET_4 : DR←mem (PC)
+        IRET_3 --> IRET_4 : DR←mem(PC)
         IRET_4 --> IRET_5 : ldPC, incSP
         IRET_5 --> IRET_6
-        IRET_6 --> IRET_7 : DR←mem (FLAGS)
-        IRET_7 --> [*] : ldFLAG←packed, set_I
+        IRET_6 --> IRET_7 : DR←mem(FLAGS)
+        IRET_7 --> [*]    : ldFLAG←packed, set_I
     }
 
     state HALT {
-        [*] --> HALT_STATE
+        [*]        --> HALT_STATE
         HALT_STATE --> HALT_STATE : finish=1
     }
 
-    FETCH --> DECODE
-    INTR_CHECK --> DECODE
-    INTR_CHECK --> INTERRUPT_SAVE
-
-    DECODE --> MEMORY_OPS : LD/ST
-    DECODE --> BRANCH_OPS : BRA/BRZ/BRN/…
-    DECODE --> STACK_OPS : PUSH/POP/RET
-    DECODE --> ALU_OPS : ADD/SUB/MUL/…
-    DECODE --> REGISTER_OPS : MOV/INC/DEC/MOVR/MOVI
-    DECODE --> MINING_OPS : MINE
-    DECODE --> IO_OPS : IN/OUT
+    DECODE --> MEMORY_OPS        : LD / ST
+    DECODE --> BRANCH_OPS        : BRA / BRZ / BRN / ...
+    DECODE --> STACK_OPS         : PUSH / POP / RET
+    DECODE --> ALU_OPS           : ADD / SUB / MUL / ...
+    DECODE --> REGISTER_OPS      : MOV / INC / DEC / MOVR / MOVI
+    DECODE --> MINING_OPS        : MINE
+    DECODE --> IO_OPS            : IN / OUT
     DECODE --> INTERRUPT_RESTORE : IRET
-    DECODE --> HALT : END
+    DECODE --> HALT              : END
+    DECODE --> FETCH             : EI / DI / NOP / WAIT
 
-    MEMORY_OPS --> FETCH
-    BRANCH_OPS --> FETCH
-    STACK_OPS --> FETCH
-    ALU_OPS --> FETCH
-    REGISTER_OPS --> FETCH
-    MINING_OPS --> FETCH
-    IO_OPS --> FETCH
-    INTERRUPT_SAVE --> FETCH
+    MEMORY_OPS       --> FETCH
+    BRANCH_OPS       --> FETCH
+    STACK_OPS        --> FETCH
+    ALU_OPS          --> FETCH
+    REGISTER_OPS     --> FETCH
+    MINING_OPS       --> FETCH
+    IO_OPS           --> FETCH
+    INTERRUPT_SAVE   --> FETCH
     INTERRUPT_RESTORE --> FETCH
-
-    DECODE --> FETCH : EI / DI / NOP / WAIT
 ```
 
 ---

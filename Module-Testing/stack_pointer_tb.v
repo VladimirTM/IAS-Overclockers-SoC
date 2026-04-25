@@ -45,12 +45,11 @@ module stack_pointer_tb;
     end
 
     initial begin
-        // Initializare semnale
         rst_n = 1;
         incSP = 0;
         decSP = 0;
 
-        $display("--- INCEPUT TESTARE STACK POINTER ---");
+        $display("--- Stack Pointer Testbench ---");
 
         // --- TEST 1: Reset (Valoarea initiala trebuie sa fie 0x03FF) ---
         @(negedge clk);
@@ -108,9 +107,8 @@ module stack_pointer_tb;
         rst_n = 1;
         check_test("Mid-operation Reset", 16'h03FF);
 
-        // --- Raport Final ---
         $display("\n-------------------------------------------");
-        $display("Simulare STACK POINTER Finalizata!");
+        $display("Simulation done!");
         $display("Total Teste: %d", test_count);
         $display("Teste PASS : %d", pass_count);
         $display("Teste FAIL : %d", fail_count);

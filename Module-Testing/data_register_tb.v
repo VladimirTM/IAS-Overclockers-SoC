@@ -20,7 +20,7 @@ module data_register_tb;
     data_register uut_dr (
         .ldDR(ldDR),
         .clk(clk),
-        .rst(rst),
+        .rst_n(rst),
         .DR_in(DR_in),
         .DR_out(DR_out)
     );
@@ -63,7 +63,7 @@ task check_test;
         end else begin
           
             $display("Test %2d FAIL: %s", test_count, test_name);
-            $display("  -> EROARE REZULTAT: S-a primit %h, se astepta %h", DR_out, exp_rez);
+            $display("  -> FAIL: got %h, expected %h", DR_out, exp_rez);
             fail_count = fail_count + 1;
             
         end
@@ -88,7 +88,7 @@ task check_test_MUX;
         end else begin
           
             $display("Test %2d FAIL: %s", test_count, test_name);
-            $display("  -> EROARE REZULTAT: S-a primit %h, se astepta %h", mux_out, exp_rez);
+            $display("  -> FAIL: got %h, expected %h", mux_out, exp_rez);
             fail_count = fail_count + 1;
             
         end
@@ -298,7 +298,7 @@ endtask
         check_test("Reset during operation: DR_out = 16'h9999", DR_in);
         
         $display("---------------------------------------");
-        $display("Simulare Finalizata!");
+        $display("Simulation done!");
         $display("Total Teste: %d", test_count);
         $display("Teste PASS : %d", pass_count);
         $display("Teste FAIL : %d", fail_count);

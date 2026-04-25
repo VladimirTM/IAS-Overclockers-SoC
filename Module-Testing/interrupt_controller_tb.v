@@ -30,10 +30,6 @@ module interrupt_controller_tb;
         .irq_id(irq_id)
     );
 
-    // -----------------------------------------------------------------------
-    // Helper tasks
-    // -----------------------------------------------------------------------
-
     task check;
         input [511:0] test_name;
         input         condition;
@@ -49,9 +45,8 @@ module interrupt_controller_tb;
         end
     endtask
 
-    // Pulse an IRQ line for one clock cycle
     task pulse_irq;
-        input which;   // 0=TIMER, 1=KBD, 2=MINE, 3=EXT
+        input [1:0] which;  // 0=TIMER, 1=KBD, 2=MINE, 3=EXT
         begin
             @ (negedge clk);
             case (which)
@@ -70,7 +65,6 @@ module interrupt_controller_tb;
         end
     endtask
 
-    // Send intr_ack for one clock cycle
     task do_ack;
         begin
             @ (negedge clk);
@@ -80,19 +74,12 @@ module interrupt_controller_tb;
         end
     endtask
 
-    // -----------------------------------------------------------------------
-    // Clock
-    // -----------------------------------------------------------------------
     initial begin
         clk = 0;
         forever #5 clk = ~clk;
     end
 
-    // -----------------------------------------------------------------------
-    // Main test sequence
-    // -----------------------------------------------------------------------
     initial begin
-        // Initialise signals
         rst_n      = 1;
         timer_irq  = 0;
         kbd_irq    = 0;
@@ -112,69 +99,53 @@ module interrupt_controller_tb;
         @ (negedge clk);
         check("Reset: intr_pending = 0", intr_pending == 1'b0);
 
-        // ------------------------------------------------------------------
-        // Test 2: TIMER pulse is latched
-        // ------------------------------------------------------------------
+        // Test 2: TIMER pulse latched
         pulse_irq(0);
         @ (negedge clk);
         check("TIMER pulse latched: intr_pending = 1", intr_pending == 1'b1);
         check("TIMER pulse: irq_id = 0", irq_id == 2'd0);
 
-        // ------------------------------------------------------------------
-        // Test 3: intr_ack clears TIMER latch
-        // ------------------------------------------------------------------
+        // Test 3: ack clears TIMER latch
         do_ack();
         @ (negedge clk);
         check("TIMER ack: intr_pending cleared", intr_pending == 1'b0);
 
-        // ------------------------------------------------------------------
-        // Test 4: IER masking — TIMER fires but ier[0] = 0
-        // ------------------------------------------------------------------
+        // Test 4: IER masking (ier[0]=0 suppresses TIMER)
         ier = 4'hE;  // disable TIMER
         pulse_irq(0);
         @ (negedge clk);
         check("TIMER masked (ier[0]=0): intr_pending = 0", intr_pending == 1'b0);
-        // Re-enable and ack to clear latch
         ier = 4'hF;
         @ (negedge clk);
         check("TIMER unmasked: intr_pending = 1", intr_pending == 1'b1);
         do_ack();
         @ (negedge clk);
 
-        // ------------------------------------------------------------------
-        // Test 5: KBD level signal — stays pending over multiple cycles
-        // ------------------------------------------------------------------
+        // Test 5: KBD level signal stays pending
         @ (negedge clk);
         kbd_irq = 1;
         @ (negedge clk); @ (negedge clk); @ (negedge clk);
         check("KBD level: intr_pending stays 1", intr_pending == 1'b1);
         check("KBD level: irq_id = 1", irq_id == 2'd1);
 
-        // ------------------------------------------------------------------
-        // Test 6: Priority — TIMER beats KBD when both pending
-        // ------------------------------------------------------------------
+        // Test 6: TIMER beats KBD when both pending
         pulse_irq(0);   // pulse TIMER; kbd_irq still high
         @ (negedge clk);
         check("Priority: TIMER>KBD, irq_id = 0", irq_id == 2'd0);
         check("Priority: intr_pending = 1", intr_pending == 1'b1);
 
-        // ------------------------------------------------------------------
-        // Test 7: After acking TIMER, KBD becomes top
-        // ------------------------------------------------------------------
+        // Test 7: after TIMER ack, KBD becomes top
         do_ack();        // ack TIMER (irq_id was 0)
         @ (negedge clk);
         check("After TIMER ack: irq_id = 1 (KBD)", irq_id == 2'd1);
         check("After TIMER ack: intr_pending still 1", intr_pending == 1'b1);
 
-        // Clear KBD
         kbd_irq = 0;
         do_ack();        // ack KBD
         @ (negedge clk);
         check("After KBD ack: intr_pending = 0", intr_pending == 1'b0);
 
-        // ------------------------------------------------------------------
-        // Test 8: MINE source — irq_id = 2
-        // ------------------------------------------------------------------
+        // Test 8: MINE source
         @ (negedge clk);
         mining_irq = 1;
         @ (negedge clk);
@@ -184,21 +155,21 @@ module interrupt_controller_tb;
         @ (negedge clk);
         check("MINE ack: intr_pending = 0", intr_pending == 1'b0);
 
-        // ------------------------------------------------------------------
-        // Test 9: EXT source — irq_id = 3
-        // ------------------------------------------------------------------
+        // Test 9: EXT source (chain: ext_irq→s1→sync→ext_latch needs 3 posedge cycles)
         @ (negedge clk);
         ext_irq = 1;
-        @ (negedge clk);
+        @ (negedge clk);  // posedge 1: ext_irq_s1=1
+        @ (negedge clk);  // posedge 2: ext_irq_sync=1
+        @ (negedge clk);  // posedge 3: ext_latch=1
         check("EXT pending: irq_id = 3", irq_id == 2'd3);
         ext_irq = 0;
+        @ (negedge clk);  // posedge 1: ext_irq_s1=0
+        @ (negedge clk);  // posedge 2: ext_irq_sync=0; ack won't re-latch
         do_ack();
         @ (negedge clk);
         check("EXT ack: intr_pending = 0", intr_pending == 1'b0);
 
-        // ------------------------------------------------------------------
-        // Test 10: All 4 sources — TIMER wins
-        // ------------------------------------------------------------------
+        // Test 10: all 4 sources — TIMER wins
         @ (negedge clk);
         kbd_irq    = 1;
         mining_irq = 1;
@@ -206,36 +177,29 @@ module interrupt_controller_tb;
         pulse_irq(0);    // TIMER pulse
         @ (negedge clk);
         check("All 4 sources: irq_id = 0 (TIMER wins)", irq_id == 2'd0);
-        // Clean up
         kbd_irq    = 0;
         mining_irq = 0;
         ext_irq    = 0;
         do_ack();
         @ (negedge clk); @ (negedge clk);
-        // Ack remaining latches
         do_ack(); @ (negedge clk);
         do_ack(); @ (negedge clk);
         do_ack(); @ (negedge clk);
 
-        // ------------------------------------------------------------------
-        // Test 11: IER masking — all disabled
-        // ------------------------------------------------------------------
+        // Test 11: IER=0 suppresses all
         ier = 4'h0;
         pulse_irq(0);
         @ (negedge clk);
         check("All IER=0: intr_pending = 0 despite TIMER pulse", intr_pending == 1'b0);
         ier = 4'hF;
-        // Clear residual latch
         do_ack();
         @ (negedge clk);
 
-        // ------------------------------------------------------------------
-        // Test 12: KBD re-asserts latch if still high after ack
-        // ------------------------------------------------------------------
+        // Test 12: KBD re-asserts latch when level stays high through ack
         @ (negedge clk);
         kbd_irq = 1;
         @ (negedge clk);
-        intr_ack = 1;  // ack while kbd_irq still high
+        intr_ack = 1;
         @ (negedge clk);
         intr_ack = 0;
         @ (negedge clk);
@@ -245,9 +209,7 @@ module interrupt_controller_tb;
         @ (negedge clk);
         check("KBD cleared after drop + ack", intr_pending == 1'b0);
 
-        // ------------------------------------------------------------------
         // Test 13: KBD > MINE priority
-        // ------------------------------------------------------------------
         @ (negedge clk);
         kbd_irq    = 1;
         mining_irq = 1;
@@ -255,9 +217,8 @@ module interrupt_controller_tb;
         @ (negedge clk);
         check("Priority KBD>MINE: irq_id = 1 (KBD wins)", irq_id == 2'd1);
         check("Priority KBD>MINE: intr_pending = 1", intr_pending == 1'b1);
-        // Clean up: ack KBD, then MINE
         kbd_irq = 0;
-        do_ack();   // ack KBD (irq_id=1)
+        do_ack();
         @ (negedge clk);
         check("After KBD ack: irq_id = 2 (MINE next)", irq_id == 2'd2);
         mining_irq = 0;
@@ -265,57 +226,51 @@ module interrupt_controller_tb;
         @ (negedge clk);
         check("After MINE ack: intr_pending = 0", intr_pending == 1'b0);
 
-        // ------------------------------------------------------------------
         // Test 14: MINE > EXT priority
-        // ------------------------------------------------------------------
         @ (negedge clk);
         mining_irq = 1;
         ext_irq    = 1;
         @ (negedge clk);
         check("Priority MINE>EXT: irq_id = 2 (MINE wins)", irq_id == 2'd2);
         check("Priority MINE>EXT: intr_pending = 1", intr_pending == 1'b1);
-        // Clean up
         mining_irq = 0;
-        do_ack();   // ack MINE (irq_id=2)
+        do_ack();
         @ (negedge clk);
         check("After MINE ack: irq_id = 3 (EXT next)", irq_id == 2'd3);
         ext_irq = 0;
+        @ (negedge clk);  // posedge 1: ext_irq_s1=0
+        @ (negedge clk);  // posedge 2: ext_irq_sync=0; ack won't re-latch
         do_ack();
         @ (negedge clk);
         check("After EXT ack: intr_pending = 0", intr_pending == 1'b0);
 
-        // ------------------------------------------------------------------
-        // Test 15: All 4 sources — ack sequence yields correct irq_id order
-        // ------------------------------------------------------------------
+        // Test 15: ack sequence TIMER→KBD→MINE→EXT
         @ (negedge clk);
         kbd_irq    = 1;
         mining_irq = 1;
         ext_irq    = 1;
-        pulse_irq(0);    // TIMER pulse → all 4 latched
+        pulse_irq(0);
         @ (negedge clk);
         check("All 4: initial irq_id = 0 (TIMER highest)", irq_id == 2'd0);
 
         kbd_irq    = 0;
         mining_irq = 0;
         ext_irq    = 0;
-        do_ack();   // ack TIMER
+        do_ack();
         @ (negedge clk);
         check("After TIMER ack: irq_id = 1 (KBD)", irq_id == 2'd1);
-        do_ack();   // ack KBD
+        do_ack();
         @ (negedge clk);
         check("After KBD ack: irq_id = 2 (MINE)", irq_id == 2'd2);
-        do_ack();   // ack MINE
+        do_ack();
         @ (negedge clk);
         check("After MINE ack: irq_id = 3 (EXT)", irq_id == 2'd3);
-        do_ack();   // ack EXT
+        do_ack();
         @ (negedge clk);
         check("After all acks: intr_pending = 0", intr_pending == 1'b0);
 
-        // ------------------------------------------------------------------
-        // Summary
-        // ------------------------------------------------------------------
         $display("---------------------------------------");
-        $display("Simulare Finalizata!");
+        $display("Simulation done!");
         $display("Total Teste: %d", test_count);
         $display("Teste PASS : %d", pass_count);
         $display("Teste FAIL : %d", fail_count);

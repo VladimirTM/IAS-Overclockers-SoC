@@ -1,12 +1,11 @@
 // Mining Core: simplified SHA-256 hash miner
-// Implemented using rca, barrel_shifter, and logic_unit sub-components
 module mining_core (
-    input wire clk,
-    input wire reset,
-    input wire start,
-    input wire [15:0] data_in,
-    input wire [15:0] nonce_in,
-    input wire [15:0] target,
+    input clk,
+    input rst_n,
+    input start,
+    input [15:0] data_in,
+    input [15:0] nonce_in,
+    input [15:0] target,
     output reg [15:0] hash_out,
     output reg [15:0] result_nonce,
     output reg done
@@ -19,6 +18,11 @@ module mining_core (
     reg [4:0] round;
     reg [15:0] current_nonce;
     reg [15:0] W [0:15];
+
+    integer _wi;
+    initial begin
+        for (_wi = 0; _wi < 16; _wi = _wi + 1) W[_wi] = 16'h0000;
+    end
 
     wire [15:0] K [0:15];
     assign K[0]  = 16'h428a;
@@ -309,20 +313,20 @@ module mining_core (
         .cin(1'b0), .z(new_e_sum), .cout()
     );
 
-    // hash_comb = (H0 + a) ^ (H4 + e)
+    // hash_final = (H0 + new_a) ^ (H4 + new_e) — uses post-round-15 values
     wire [16:0] h_sum1, h_sum2;
-    wire [15:0] hash_comb;
+    wire [15:0] hash_final;
     rca rca_h1 (
-        .x({1'b0, H0}), .y({1'b0, a}),
+        .x({1'b0, H0}), .y({1'b0, new_a_sum[15:0]}),
         .cin(1'b0), .z(h_sum1), .cout()
     );
     rca rca_h2 (
-        .x({1'b0, H4}), .y({1'b0, e}),
+        .x({1'b0, H4}), .y({1'b0, new_e_sum[15:0]}),
         .cin(1'b0), .z(h_sum2), .cout()
     );
     logic_unit lu_hash (
         .operand1(h_sum1[15:0]), .operand2(h_sum2[15:0]),
-        .op_select(2'b10), .result(hash_comb)
+        .op_select(2'b10), .result(hash_final)
     );
 
     // nonce_inc = current_nonce + 1
@@ -333,8 +337,8 @@ module mining_core (
     );
 
     // Sequential FSM
-    always @(posedge clk or negedge reset) begin
-        if (!reset) begin
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
             state <= IDLE;
             done <= 0;
             hash_out <= 0;
@@ -394,7 +398,7 @@ module mining_core (
                     h <= g;
 
                     if (round == 15) begin
-                        hash_out <= hash_comb;
+                        hash_out <= hash_final;
                     end else begin
                         round <= round + 1;
                     end

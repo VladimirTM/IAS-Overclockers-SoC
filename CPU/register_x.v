@@ -1,7 +1,7 @@
 // X Register: general-purpose register with inc/dec
 module register_x (
     input clk,
-    input reset,
+    input rst_n,
     input ldX,
     input incrX,
     input decrX,
@@ -9,8 +9,8 @@ module register_x (
     output reg [15:0] X
 );
 
-    always @(posedge clk or negedge reset) begin
-        if (!reset) begin
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
             X <= 16'h0000;
         end
         else begin
@@ -23,6 +23,7 @@ module register_x (
             else if (decrX && !incrX) begin
                 X <= X - 1;
             end
+            // incrX && decrX: mutually exclusive per CU design — no change
         end
     end
 

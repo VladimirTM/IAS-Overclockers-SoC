@@ -20,7 +20,6 @@ mux_ar CUT (
     .out(out)
 );
 
-// Task-ul de verificare
 task check_mux_ar;
     input [511:0] test_name;
     input [15:0] exp_out;
@@ -32,7 +31,7 @@ task check_mux_ar;
             pass_count = pass_count + 1;
         end else begin
             $display("Test %2d FAIL: %s", test_count, test_name);
-            $display("  -> EROARE: S-a primit %h, se astepta %h", out, exp_out);
+            $display("  -> FAIL: got %h, expected %h", out, exp_out);
             fail_count = fail_count + 1;
         end
     end
@@ -50,64 +49,53 @@ initial begin
     AR_EXT = 16'h0000;
     CondAR = 2'b00;
 
-    $display("========== INCEPERE TESTARE MUX AR ==========");
-
-    // --- TEST 1: Selectie Program Counter (CondAR = 00) ---
     @(negedge clk);
     CondAR = 2'b00;
     #5;
-    check_mux_ar("Selectie PC", 16'h1000);
+    check_mux_ar("Select PC (CondAR=00)", 16'h1000);
 
-    // --- TEST 2: Selectie Stack Pointer (CondAR = 01) ---
     @(negedge clk);
     CondAR = 2'b01;
     #5;
-    check_mux_ar("Selectie SP", 16'h7FFE);
+    check_mux_ar("Select SP (CondAR=01)", 16'h7FFE);
 
-    // --- TEST 3: Selectie Valoare Immediata (CondAR = 10) ---
     @(negedge clk);
     CondAR = 2'b10;
     #5;
-    check_mux_ar("Selectie IMM", 16'hABCD);
+    check_mux_ar("Select IMM (CondAR=10)", 16'hABCD);
 
-    // --- TEST 4: Selectie AR_EXT cu valoare 0 (CondAR = 11) ---
     @(negedge clk);
     AR_EXT = 16'h0000;
     CondAR = 2'b11;
     #5;
-    check_mux_ar("Selectie AR_EXT = 0x0000", 16'h0000);
+    check_mux_ar("Select AR_EXT=0x0000 (CondAR=11)", 16'h0000);
 
-    // --- TEST 5: Actualizare dinamica intrare selectata ---
     @(negedge clk);
     CondAR = 2'b01;
     SP = 16'h1234;
     #5;
-    check_mux_ar("Schimbare valoare pe intrarea SP", 16'h1234);
+    check_mux_ar("Dynamic change on SP input", 16'h1234);
 
-    // --- TEST 6: AR_EXT selectie adresa pagina I/O (CondAR = 11) ---
     @(negedge clk);
-    AR_EXT = 16'h0400;  // bit 10 set: adresa spatiu I/O (port 0)
+    AR_EXT = 16'h0400;  // bit 10 set: I/O space (port 0)
     CondAR = 2'b11;
     #5;
-    check_mux_ar("AR_EXT: adresa pagina I/O (bit10=1)", 16'h0400);
+    check_mux_ar("AR_EXT: I/O page address (bit10=1)", 16'h0400);
 
-    // --- TEST 7: AR_EXT selectie adresa IVT (CondAR = 11) ---
     @(negedge clk);
-    AR_EXT = 16'h00BE;  // 190 decimal: baza IVT
+    AR_EXT = 16'h00BE;  // 190 decimal: IVT base
     CondAR = 2'b11;
     #5;
-    check_mux_ar("AR_EXT: adresa IVT 190", 16'h00BE);
+    check_mux_ar("AR_EXT: IVT address 190", 16'h00BE);
 
-    // --- TEST 8: AR_EXT nu afecteaza alte selectii ---
     @(negedge clk);
     AR_EXT = 16'hDEAD;
-    CondAR = 2'b00;  // trebuie sa selecteze PC, nu AR_EXT
+    CondAR = 2'b00;  // should select PC, not AR_EXT
     #5;
-    check_mux_ar("AR_EXT ignorat cand CondAR=00", 16'h1000);
+    check_mux_ar("AR_EXT ignored when CondAR=00", 16'h1000);
 
-    // Raport Final
     $display("---------------------------------------");
-    $display("Simulare Finalizata!");
+    $display("Simulation done!");
     $display("Total Teste : %d", test_count);
     $display("Teste PASS  : %d", pass_count);
     $display("Teste FAIL  : %d", fail_count);

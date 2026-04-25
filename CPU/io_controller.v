@@ -1,4 +1,4 @@
-// I/O Controller: keyboard, display, timer, and mining peripherals over a 10-bit port bus
+// I/O Controller: keyboard, display, timer, mining — 10-bit port bus
 module io_controller (
     input             clk,
     input             rst_n,
@@ -22,10 +22,12 @@ module io_controller (
     output reg        kbd_irq,
     output reg        timer_irq,
     output reg        mining_irq,
-    output reg [3:0]  ier_out
+    output reg [3:0]  ier_out,
+    // EXT interrupt flag (from interrupt_controller) for IFR readback
+    input             ext_irq_pending
 );
 
-    // I/O port addresses (10-bit)
+    // Port addresses
     localparam [9:0]
         KBD_DATA     = 10'd0,   // read clears latch + kbd_irq
         KBD_STATUS   = 10'd1,   // bit 0 = key ready
@@ -39,9 +41,10 @@ module io_controller (
         MINE_HASH    = 10'd64,  // read clears mining_irq
         MINE_NONCE   = 10'd65;
 
-    // ---- Keyboard registers ----
+    // Keyboard
     reg [15:0] kbd_latch;
 
+    // kbd_strobe wins over simultaneous KBD_DATA read-clear; callers must not assert both in the same cycle.
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             kbd_latch <= 16'h0000;
@@ -55,7 +58,7 @@ module io_controller (
         end
     end
 
-    // ---- Timer ----
+    // Timer
     reg [15:0] timer_count;
     reg [15:0] timer_period;
     reg        timer_enable;
@@ -79,10 +82,8 @@ module io_controller (
             if (io_we && io_addr == TIMER_PERIOD) begin
                 timer_period <= io_data_in;
                 timer_count  <= 16'h0000;
-            end
-
-            if (timer_enable) begin
-                if (timer_count == timer_period) begin
+            end else if (timer_enable) begin
+                if (timer_count == timer_period - 1) begin
                     timer_irq <= 1'b1;
                     if (timer_periodic)
                         timer_count <= 16'h0000;
@@ -95,7 +96,7 @@ module io_controller (
         end
     end
 
-    // ---- Mining result latch ----
+    // Mining
     reg [15:0] mining_hash_latch;
     reg [15:0] mining_nonce_latch;
     reg        mining_done_prev;
@@ -118,7 +119,7 @@ module io_controller (
         end
     end
 
-    // ---- IER register (port 48) ----
+    // IER (port 48)
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n)
             ier_out <= 4'b0000;
@@ -126,7 +127,7 @@ module io_controller (
             ier_out <= io_data_in[3:0];
     end
 
-    // ---- Display (port 16): single-cycle disp_we pulse ----
+    // Display (port 16)
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             disp_data_out <= 16'h0000;
@@ -152,7 +153,7 @@ module io_controller (
                 TIMER_PERIOD: io_data_out = timer_period;
                 TIMER_COUNT:  io_data_out = timer_count;
                 IER_ADDR:     io_data_out = {12'b0, ier_out};
-                IFR_ADDR:     io_data_out = {13'b0, mining_irq, kbd_irq, timer_irq};
+                IFR_ADDR:     io_data_out = {12'b0, ext_irq_pending, mining_irq, kbd_irq, timer_irq};
                 MINE_HASH:    io_data_out = mining_hash_latch;
                 MINE_NONCE:   io_data_out = mining_nonce_latch;
                 default:      io_data_out = 16'h0000;

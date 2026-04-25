@@ -142,6 +142,13 @@ MOV Y, 22
 POP Y
 POP X
 
+; I/O and Interrupt Enable/Disable Tests
+EI              ; enable interrupts (I_flag = 1)
+DI              ; disable interrupts (I_flag = 0)
+MOVI 42         ; A = 42 (value to write to display)
+OUT 16          ; write A to display port 16
+IN 1            ; read KBD_STATUS into A (no strobe → 0)
+
 ; Final success marker
 MOVI 100
 END

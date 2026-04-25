@@ -375,8 +375,10 @@ module ALU (
     always @(posedge clk or negedge rst_b) begin
         if (!rst_b)
             exception <= 1'b0;
-        else if ((operation_type == 4'd3 | operation_type == 4'd4) &
-                 (operand2 == 16'd0) & core_start)
+        // INT_MIN (-32768) cannot be negated in 16-bit; treat as overflow exception
+        else if ((operation_type == 4'd3 || operation_type == 4'd4) &&
+                 ((operand2 == 16'd0) || (operand1 == 16'h8000) || (operand2 == 16'h8000)) &&
+                 core_start)
             exception <= 1'b1;
         else if (a0 & ~core_start)
             exception <= 1'b0;

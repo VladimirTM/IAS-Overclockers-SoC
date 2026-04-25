@@ -10,6 +10,7 @@ module flags_tb;
     reg alu_neg;
     reg alu_carry;
     reg alu_overflow;
+    reg alu_exc;
     reg use_direct_value;
     reg use_packed_flags;
     reg [15:0] direct_value;
@@ -27,6 +28,7 @@ module flags_tb;
         .alu_neg(alu_neg),
         .alu_carry(alu_carry),
         .alu_overflow(alu_overflow),
+        .alu_exc(alu_exc),
         .use_direct_value(use_direct_value),
         .use_packed_flags(use_packed_flags),
         .direct_value(direct_value),
@@ -57,7 +59,7 @@ module flags_tb;
                 pass_count = pass_count + 1;
             end else begin
                 $display("Test %2d FAIL: %s", test_count, test_name);
-                $display("  -> EROARE: ZNCO primit %b%b%b%b, se astepta %b%b%b%b", Z, N, C, O, exp_Z, exp_N, exp_C, exp_O);
+                $display("  -> FAIL: got Z=%b N=%b C=%b O=%b, expected %b %b %b %b", Z, N, C, O, exp_Z, exp_N, exp_C, exp_O);
                 fail_count = fail_count + 1;
             end
         end
@@ -76,6 +78,7 @@ module flags_tb;
         alu_neg = 0;
         alu_carry = 0;
         alu_overflow = 0;
+        alu_exc = 0;
         use_direct_value = 0;
         use_packed_flags = 0;
         direct_value = 16'h0000;
@@ -241,8 +244,23 @@ module flags_tb;
         use_direct_value = 0;
         use_packed_flags = 0;
 
+        /*
+        ========================================
+             ALU Exception (Division by Zero)
+        ========================================
+        */
+
+        @ (negedge clk);
+        ldFLAG = 1;
+        alu_exc = 1;
+        alu_zero = 1; alu_neg = 1; alu_carry = 1; alu_overflow = 0;
+        @ (negedge clk);
+        check_test("ALU Exc (div/0): ZNCO = 0001 (O only)", 0, 0, 0, 1);
+
+        alu_exc = 0;
+
         $display("---------------------------------------");
-        $display("Simulare Finalizata!");
+        $display("Simulation done!");
         $display("Total Teste: %d", test_count);
         $display("Teste PASS : %d", pass_count);
         $display("Teste FAIL : %d", fail_count);

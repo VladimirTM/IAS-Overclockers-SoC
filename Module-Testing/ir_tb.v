@@ -38,7 +38,7 @@ task check_test;
         end else begin
           
             $display("Test %2d FAIL: %s", test_count, test_name);
-            $display("  -> EROARE REZULTAT: S-a primit %h, se astepta %h", instruction, exp_rez);
+            $display("  -> FAIL: got %h, expected %h", instruction, exp_rez);
             fail_count = fail_count + 1;
         end
     end
@@ -91,7 +91,7 @@ initial begin
     check_test ("Load Data: instruction = 16'hCAFE", 16'hCAFE);
 
     $display("---------------------------------------");
-    $display("Simulare Finalizata!");
+    $display("Simulation done!");
     $display("Total Teste: %d", test_count);
     $display("Teste PASS : %d", pass_count);
     $display("Teste FAIL : %d", fail_count);

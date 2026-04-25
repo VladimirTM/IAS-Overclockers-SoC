@@ -51,7 +51,7 @@ module address_register_tb;
                 pass_count = pass_count + 1;
             end else begin
                 $display("Test %2d FAIL: %s", test_count, test_name);
-                $display("  -> EROARE REZULTAT: S-a primit %h, se astepta %h", out_address, exp_rez);
+                $display("  -> FAIL: got %h, expected %h", out_address, exp_rez);
                 fail_count = fail_count + 1;
             end
         end
@@ -72,7 +72,7 @@ module address_register_tb;
                 pass_count = pass_count + 1;
             end else begin
                 $display("Test %2d FAIL: %s", test_count, test_name);
-                $display("  -> EROARE REZULTAT: S-a primit %h, se astepta %h", mux_out, exp_rez);
+                $display("  -> FAIL: got %h, expected %h", mux_out, exp_rez);
                 fail_count = fail_count + 1;
             end
         end
@@ -89,10 +89,9 @@ module address_register_tb;
         ldAR = 0;
         in_address = 0;
 
-        // Valori de test pentru intrarile MUX
-        PC     = 16'hAAAA; // Valoare test PC
-        SP     = 16'hBBBB; // Valoare test SP
-        IMM    = 16'hCCCC; // Valoare test IMM
+        PC     = 16'hAAAA;
+        SP     = 16'hBBBB;
+        IMM    = 16'hCCCC;
         AR_EXT = 16'h0000; // I/O / IVT address (0 in unit tests)
 
         CondAR = 2'b00;
@@ -212,7 +211,7 @@ module address_register_tb;
         
         
         $display("---------------------------------------");
-        $display("Simulare Finalizata!");
+        $display("Simulation done!");
         $display("Total Teste: %d", test_count);
         $display("Teste PASS : %d", pass_count);
         $display("Teste FAIL : %d", fail_count);

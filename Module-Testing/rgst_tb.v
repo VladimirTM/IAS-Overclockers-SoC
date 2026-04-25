@@ -103,9 +103,8 @@ module rgst_tb;
         clr = 0;
         check_test("Clear Register", 8'b0000_0000);
 
-        // --- Raport Final ---
         $display("\n-------------------------------------------");
-        $display("Simulare Finalizata!");
+        $display("Simulation done!");
         $display("Total Teste: %d", test_count);
         $display("Teste PASS : %d", pass_count);
         $display("Teste FAIL : %d", fail_count);

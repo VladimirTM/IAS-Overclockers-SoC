@@ -51,9 +51,9 @@ for tb_file in *_tb.v; do
         output=$(vvp -N "${base_name}.out" 2>&1)
         echo "$output"
 
-        # Parse PASS/FAIL counts from output (handles both "Teste PASS : N" and "Passed: N" formats)
-        pass=$(echo "$output" | grep -oE '(Teste PASS|Passed)\s*:\s*[0-9]+' | grep -oE '[0-9]+$')
-        fail=$(echo "$output" | grep -oE '(Teste FAIL|Failed)\s*:\s*[0-9]+' | grep -oE '[0-9]+$')
+        # Parse PASS/FAIL counts (handles "Teste PASS : N", "Passed: N", and "Pass:  N" formats)
+        pass=$(echo "$output" | grep -oE '(Teste PASS|Passed|Pass)[[:space:]]*:[[:space:]]*[0-9]+' | grep -oE '[0-9]+$')
+        fail=$(echo "$output" | grep -oE '(Teste FAIL|Failed|Fail)[[:space:]]*:[[:space:]]*[0-9]+' | grep -oE '[0-9]+$')
         if [ -n "$pass" ]; then
             TOTAL_PASS=$((TOTAL_PASS + pass))
             TOTAL_RUNS=$((TOTAL_RUNS + 1))

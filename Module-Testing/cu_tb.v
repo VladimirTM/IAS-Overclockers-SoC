@@ -96,8 +96,6 @@ module cu_tb;
         .saved_irq_id()
     );
 
-    // Concatenam toate iesirile intr-un vector pentru o verificare usoara
-    // Total biti: 1+2+1+3+1+1+1+1+1+1+1+1+1+1+1+1+2+1+1+1+1+1+1+1+1+1+1+1+1 = 33 biti
     wire [32:0] ctrl_bus;
     assign ctrl_bus = {
         ldAR, condAR, ldDR, condDR, ldIR, incPC, ldPC, ldPCfromDR,
@@ -141,26 +139,22 @@ module cu_tb;
                 pass_count = pass_count + 1;
             end else begin
                 $display("Test %2d FAIL: %s", test_count, test_name);
-                $display("  -> EROARE: Semnale primite %h, se astepta %h", ctrl_bus, exp_ctrl_bus);
+                $display("  -> FAIL: got %h, expected %h", ctrl_bus, exp_ctrl_bus);
                 fail_count = fail_count + 1;
             end
         end
     endtask
     
-    // Task pentru a aduce FSM-ul in starea DECODE
+    // Drive FSM to DECODE state
     task reset_to_decode;
         begin
-            // Reset asincron
             rst_n = 0;
             #1;
             rst_n = 1;
-            // Suntem in LOAD_ADDR
-            @(negedge clk);
-            // Suntem in LOAD_INSTR
-            @(negedge clk);
-            // Suntem in INTR_CHECK (v3.1: inserted between LOAD_INSTR and DECODE)
-            @(negedge clk);
-            // Suntem in DECODE
+            @(negedge clk); // LOAD_ADDR
+            @(negedge clk); // LOAD_INSTR
+            // INTR_CHECK (v3.1: between LOAD_INSTR and DECODE)
+            @(negedge clk); // DECODE
         end
     endtask
 
@@ -192,8 +186,6 @@ module cu_tb;
         @(negedge clk); // done like this for iverilog testing script
         rst_n = 1;
         
-        // Verificam starea LOAD_ADDR (doar ldAR = 1 activat)
-        // Bit 30 este ldAR. Restul 0.
         check_test("State LOAD_ADDR: ldAR=1", 33'h100000000);
 
         /*
@@ -201,16 +193,11 @@ module cu_tb;
              Fetch Cycle Test
         ========================================
         */
-        // Tranzitie LOAD_ADDR -> LOAD_INSTR
-        // Asteptam: ldDR=1 (bit 26), ldIR=1 (bit 22), incPC=1 (bit 21)
-        // 30'h04600000
         @(negedge clk);
         check_test("State LOAD_INSTR: ldDR=ldIR=incPC=1", 33'h023000000);
 
-        // Tranzitie LOAD_INSTR -> DECODE
-        // Nu se activeaza niciun semnal in starea DECODE
         @(negedge clk);
-        check_test("State DECODE: No signals", 33'h000000000);
+        check_test("State INTR_CHECK: No signals", 33'h000000000);
 
         /*
         ========================================
@@ -218,26 +205,18 @@ module cu_tb;
         ========================================
         */
         
-        // Suntem in DECODE. Setam Opcode pentru LOAD si regaddr=0 (X)
         opcode = OP_LOAD;
-        regaddr = 0; // Target X
+        regaddr = 0; // X
         @(negedge clk); // v3.1: advance INTR_CHECK → DECODE (intr_pending=0)
-        // Tranzitie DECODE -> LOAD_1
-        // LOAD_1: ldAR=1, condAR=10 (bits 29, 28-27) -> 110... -> 0x30...
         @(negedge clk);
         check_test("Inst LOAD (Step 1): ldAR, condAR=10", 33'h180000000);
 
-        // Tranzitie LOAD_1 -> LOAD_2
-        // LOAD_2: ldDR=1, condDR=000 -> Bit 26 -> 0x04...
         @(negedge clk);
         check_test("Inst LOAD (Step 2): ldDR", 33'h020000000);
 
-        // Tranzitie LOAD_2 -> LOAD_3
-        // LOAD_3: regaddr=0 => ldX=1 -> Bit 18 -> 0x00040000
         @(negedge clk);
         check_test("Inst LOAD (Step 3): ldX=1", 33'h000200000);
 
-        // Urmatoarea stare trebuie sa fie LOAD_ADDR
         @(negedge clk);
         check_test("Return to LOAD_ADDR", 33'h100000000);
 
@@ -246,12 +225,10 @@ module cu_tb;
              Instruction Test: ALU ADD
         ========================================
         */
-        // Derulam Fetch-ul manual pana la DECODE
-        // LOAD_ADDR -> LOAD_INSTR -> INTR_CHECK -> DECODE
         @(negedge clk); // LOAD_INSTR
         check_test("State LOAD_INSTR: ldDR=ldIR=incPC=1", 33'h023000000);
         @(negedge clk); // INTR_CHECK (no signals when intr_pending=0)
-        check_test("State DECODE: No signals", 33'h000000000);
+        check_test("State INTR_CHECK: No signals", 33'h000000000);
 
         opcode = OP_ADD;
         regaddr = 0;
@@ -267,75 +244,59 @@ module cu_tb;
         @(negedge clk);
         check_test("ALU Step 2 (OP1): alu_start, condALU=01", 33'h000005000);
 
-        // ALU_LOAD_OP1 -> ALU_LOAD_OP2
-        // alu_start=1, condALU=10 (pt regaddr 0) -> 0x00000C00
         @(negedge clk);
         check_test("ALU Step 3 (OP2): alu_start, condALU=10", 33'h000006000);
 
-        // ALU_LOAD_OP2 -> ALU_WAIT
-        // alu_start=1 -> 0x00000800. Asteptam aici pana la alu_end
-        alu_end = 0;
+        alu_end = 0; // wait for alu_end
         @(negedge clk);
         check_test("ALU Wait: alu_start active", 33'h000004000);
-        
-        // Semnalam terminarea ALU
-        alu_end = 1;
-        @(negedge clk); 
-        // Acum ar trebui sa treaca in ALU_GET_RESULT
-        // ldA=1 (bit 16), ldFLAG=1 (bit 14) -> 0x00014000
+
+        alu_end = 1; // signal ALU done
+        @(negedge clk);
         check_test("ALU Get Result: ldA, ldFLAG", 33'h0000A0000);
 
-        // Resetam alu_end pentru urmatorul test
-        alu_end = 0;
+        alu_end = 0; // deassert alu_end
 
         /*
         ========================================
              Instruction Test: BRZ (Branch if Zero)
         ========================================
         */
-        // Intoarcere la LOAD_ADDR -> LOAD_INSTR -> INTR_CHECK -> DECODE
         @(negedge clk); // LOAD_ADDR
         check_test("Return to LOAD_ADDR", 33'h100000000);
         @(negedge clk); // LOAD_INSTR
         check_test("State LOAD_INSTR: ldDR=ldIR=incPC=1", 33'h023000000);
         @(negedge clk); // INTR_CHECK (no signals when intr_pending=0)
-        check_test("State DECODE: No signals", 33'h000000000);
+        check_test("State INTR_CHECK: No signals", 33'h000000000);
 
         opcode = OP_BRZ;
-        Z = 1; // Flag Zero setat -> Branch Taken
+        Z = 1; // Z=1: branch taken
         @(negedge clk); // v3.1: advance INTR_CHECK → DECODE
-        // DECODE -> BRZ_CHECK
         @(negedge clk);
         check_test("State BRZ_CHECK: No signals", 33'h000000000);
 
-        // Urmatoarea stare: BRZ_TAKE (pentru ca Z=1)
         @(negedge clk);
         check_test("State BRZ_TAKE: ldPC=1", 33'h000800000);
 
-        // For Z = 0
-
-        // Intoarcere la LOAD_ADDR -> LOAD_INSTR -> INTR_CHECK -> DECODE
         @(negedge clk); // LOAD_ADDR
         check_test("Return to LOAD_ADDR", 33'h100000000);
         @(negedge clk); // LOAD_INSTR
         check_test("State LOAD_INSTR: ldDR=ldIR=incPC=1", 33'h023000000);
         @(negedge clk); // INTR_CHECK (no signals when intr_pending=0)
-        check_test("State DECODE: No signals", 33'h000000000);
+        check_test("State INTR_CHECK: No signals", 33'h000000000);
 
         opcode = OP_BRZ;
-        Z = 0; // Flag Zero inactiv -> Branch Skipped
+        Z = 0; // Z=0: branch skipped
         @(negedge clk); // v3.1: advance INTR_CHECK → DECODE
-        // DECODE -> BRZ_CHECK
         @(negedge clk);
         check_test("State BRZ_CHECK: No signals", 33'h000000000);
-        
-        // Urmatoarea stare: BRZ_SKIP (pentru ca Z=0)
+
         @(negedge clk);
         check_test("State BRZ_SKIP: No signals", 33'h000000000);
         
-        // =========================================================
-        //  Testare Branch-uri Conditionale (Toate flag-urile)
-        // =========================================================
+        
+        // Conditional branch tests
+        
         
         // --- Test BRZ/BEQ (Zero Flag) ---
         // Note: BEQ is an alias for BRZ (same opcode 000100)
@@ -374,23 +335,19 @@ module cu_tb;
         @(negedge clk); check_test("BRO_CHECK (O=0)", 33'h000000000);
         @(negedge clk); check_test("BRO_SKIP (No Op)", 33'h000000000);
 
-        // =========================================================
-        //  Testare Branch Always (BRA)
-        // =========================================================
+        
+        // BRA (branch always)
+        
         reset_to_decode(); opcode = OP_BRA;
         @(negedge clk);
         // BRA_1: ldPC=1 (bit 21) -> 0x00200000
         check_test("State BRA_1: ldPC=1", 33'h000800000);
 
-        // =========================================================
-        //  Testare Operatii ALU (Arithmetic & Logic)
-        // =========================================================
         
-        /* ===================================================================
-           GRUPA 1: Opcode-uri LOW (Bit 5 = 0) -> Resultat + Flags
-           condALU = 2'b10 (0x...1800)
-        ===================================================================
-        */
+        // ALU operations
+        
+        
+        /* === ALU: bit5=0 (register ops) — result+flags === */
 
         // --- OP_ADD ---
         reset_to_decode(); opcode = OP_ADD; regaddr = 0; alu_end = 0;
@@ -516,7 +473,7 @@ module cu_tb;
         @(negedge clk); check_test("CMP: ALU_LOAD_OP2 (High)", 33'h000006000);
         @(negedge clk); check_test("CMP: ALU_WAIT", 33'h000004000);
         alu_end = 1;
-        // Diferenta: ldA=0, ldFLAG=1 -> 0x00008000
+        // compare/test: ldFLAG only (no ldA)
         @(negedge clk); check_test("CMP: GET_FLAGS_ONLY", 33'h000020000);
 
         // --- OP_TST ---
@@ -528,11 +485,7 @@ module cu_tb;
         alu_end = 1;
         @(negedge clk); check_test("TST: GET_FLAGS_ONLY", 33'h000020000);
 
-        /* ===================================================================
-           GRUPA 2: Opcode-uri HIGH (Bit 5 = 1) -> Resultat + Flags
-           condALU = 2'b11 (0x...1C00) - Aceasta este diferenta majora
-        ===================================================================
-        */
+        /* === ALU: bit5=1 (immediate ops) — condALU=11 vs 10 === */
         
         // --- OP_ADDI ---
         reset_to_decode(); opcode = OP_ADDI; regaddr = 0; alu_end = 0;
@@ -669,9 +622,9 @@ module cu_tb;
         alu_end = 1;
         @(negedge clk); check_test("TSTI: GET_FLAGS_ONLY", 33'h000020000);
         
-        // =========================================================
-        //  Testare Memory & Stack
-        // =========================================================
+        
+        // Memory and stack
+        
         
         // --- STORE ---
         reset_to_decode(); opcode = OP_STORE; regaddr = 0; // Store X
@@ -693,9 +646,9 @@ module cu_tb;
         @(negedge clk); check_test("RET_4 (Wait)", 33'h000000000);
         @(negedge clk); check_test("RET_5 (ldPC)", 33'h000C00000); // ldPC=1, ldPCfromDR=1
         
-        // =========================================================
-        //  Testare Diverse (MOV, INC, MINE, HALT)
-        // =========================================================
+        
+        // Misc: MOV, INC, MINE, HALT
+        
         
         // --- MOV (Move Reg to Reg) ---
         reset_to_decode(); opcode = OP_MOV; regaddr = 1; // Mov to Y
@@ -904,7 +857,6 @@ module cu_tb;
              Instruction Test: HALT
         ========================================
         */
-        // Intoarcere la LOAD_ADDR -> LOAD_INSTR -> DECODE
         reset_to_decode();
 
         opcode = OP_HALT;
@@ -917,7 +869,7 @@ module cu_tb;
 
 
         $display("---------------------------------------");
-        $display("Simulare Finalizata!");
+        $display("Simulation done!");
         $display("Total Teste: %d", test_count);
         $display("Teste PASS : %d", pass_count);
         $display("Teste FAIL : %d", fail_count);

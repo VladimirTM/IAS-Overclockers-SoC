@@ -43,7 +43,7 @@ module cpu (
     wire mining_start, use_mining_result;
     wire [15:0] mining_hash_out, mining_result_nonce;
 
-    wire use_dr_for_a, use_movr_flags;
+    wire use_dr_for_a, use_movr_flags, is_decrement;
 
     // I/O control signals from CU
     wire io_we_cu, io_re, ivt_mode;
@@ -53,6 +53,7 @@ module cpu (
     wire [1:0]  irq_id;
     wire        intr_ack, set_I, clr_I, use_packed_flags;
     wire [1:0]  saved_irq_id_w;
+    wire        cu_I_flag;
 
     // MMIO routing: ar_out[10]=1 → I/O space, =0 → RAM
     wire io_access    = ar_out[10];
@@ -60,12 +61,14 @@ module cpu (
     wire io_we_sig    = io_we_cu | (memWR & io_access);
 
     // AR_EXT: I/O page (ivt_mode=0) or IVT[saved_irq_id] (ivt_mode=1)
-    wire [15:0] ar_ext_in = ivt_mode ? (16'd190 + {14'b0, saved_irq_id_w})
+    localparam [15:0] IVT_BASE = 16'd190;  // IVT entries at RAM[190..193]: one per IRQ source
+    wire [15:0] ar_ext_in = ivt_mode ? (IVT_BASE + {14'b0, saved_irq_id_w})
                                       : {5'b00001, ir_out[9:0]};
 
     wire [15:0] io_data_out_w;
     wire        kbd_irq_w, timer_irq_w, mining_irq_w;
     wire [3:0]  ier_out_w;
+    wire        ext_pending_w;
 
     // direct_flag: MOVR→IR[7:6] source, INC/DEC→X/Y, default→DR
     wire [15:0] direct_flag_value;
@@ -95,7 +98,7 @@ module cpu (
 
     data_register dr_inst (
         .clk(clk),
-        .rst(rst_n),
+        .rst_n(rst_n),
         .ldDR(ldDR),
         .DR_in(mux_dr_out),
         .DR_out(dr_out)
@@ -126,7 +129,7 @@ module cpu (
 
     accumulator a_inst (
         .clk(clk),
-        .reset(rst_n),
+        .rst_n(rst_n),
         .ldA(ldA),
         .use_imm(use_imm_a_internal),
         .D_in(a_data_in),
@@ -139,7 +142,7 @@ module cpu (
 
     register_x x_inst (
         .clk(clk),
-        .reset(rst_n),
+        .rst_n(rst_n),
         .ldX(ldX),
         .incrX(incrX),
         .decrX(decrX),
@@ -149,7 +152,7 @@ module cpu (
 
     register_y y_inst (
         .clk(clk),
-        .reset(rst_n),
+        .rst_n(rst_n),
         .ldY(ldY),
         .incrY(incrY),
         .decrY(decrY),
@@ -173,8 +176,11 @@ module cpu (
         .alu_neg(alu_neg),
         .alu_carry(alu_carry),
         .alu_overflow(alu_overflow),
+        .alu_exc(alu_exc),
         .use_direct_value(use_direct_flag),
         .use_packed_flags(use_packed_flags),
+        .use_xy_for_flags(use_xy_for_flags),
+        .is_decrement(is_decrement),
         .direct_value(direct_flag_value),
         .Z(Z_flag),
         .N(N_flag),
@@ -239,7 +245,7 @@ module cpu (
 
     mining_core mining_inst (
         .clk(clk),
-        .reset(rst_n),
+        .rst_n(rst_n),
         .start(mining_start),
         .data_in(X_out),
         .nonce_in(Y_out),
@@ -267,7 +273,8 @@ module cpu (
         .kbd_irq(kbd_irq_w),
         .timer_irq(timer_irq_w),
         .mining_irq(mining_irq_w),
-        .ier_out(ier_out_w)
+        .ier_out(ier_out_w),
+        .ext_irq_pending(ext_pending_w)
     );
 
     interrupt_controller intr_ctrl_inst (
@@ -278,10 +285,11 @@ module cpu (
         .mining_irq(mining_irq_w),
         .ext_irq(ext_irq),
         .ier(ier_out_w),
-        .I_flag(cu_inst.I_flag),    // hierarchical ref (simulation only)
+        .I_flag(cu_I_flag),
         .intr_ack(intr_ack),
         .intr_pending(intr_pending),
-        .irq_id(irq_id)
+        .irq_id(irq_id),
+        .ext_pending(ext_pending_w)
     );
 
     cu cu_inst (
@@ -321,6 +329,7 @@ module cpu (
         .use_direct_flag(use_direct_flag),
         .use_imm_a(use_imm_a),
         .use_xy_for_flags(use_xy_for_flags),
+        .is_decrement(is_decrement),
         .mining_start(mining_start),
         .use_mining_result(use_mining_result),
         .use_dr_for_a(use_dr_for_a),
@@ -335,7 +344,8 @@ module cpu (
         .set_I(set_I),
         .clr_I(clr_I),
         .use_packed_flags(use_packed_flags),
-        .saved_irq_id(saved_irq_id_w)
+        .saved_irq_id(saved_irq_id_w),
+        .I_flag_out(cu_I_flag)
     );
 
     reg halt_msg_printed;

@@ -156,7 +156,7 @@ module controlUnit (
             st <= 0;
             st[A0] <= 1;
         end
-        else if (clk == 0)
+        else
             st <= st_next;
     end
 

@@ -62,7 +62,10 @@ module SRT4_PLA (
                 else if (P >= 11  && P <= 21)  q =  2;
                 else q = 0;
 
-            default: q = 0;
+            default: begin
+                q = 0;
+                $warning("SRT4_PLA: b=%0d out of valid range [8:15]", b);
+            end
         endcase
     end
 endmodule

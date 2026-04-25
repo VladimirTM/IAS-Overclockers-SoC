@@ -10,6 +10,8 @@ module memory (
 
     initial begin
         $readmemb("data_bin.txt", mem);
+        if (mem[0] === 16'bx)
+            $display("WARNING: memory.v: 'data_bin.txt' not found or empty — memory uninitialized");
     end
     
     always @(posedge clk) begin

@@ -34,7 +34,7 @@ module seu_tb;
     endtask
 
     initial begin
-        $display("--- INCEPUT TESTARE SEU (9-bit to 16-bit) ---");
+        $display("--- SEU Testbench (9-bit to 16-bit sign extend) ---");
 
         // --- TEST 1: Valoare pozitivă mică ---
         in_imm = 9'h005; // MSB (bit 8) este 0
@@ -66,9 +66,8 @@ module seu_tb;
         #10;
         check_test("Sign bit 1 with pattern", 16'hFF55);
 
-        // --- Raport Final ---
         $display("\n-------------------------------------------");
-        $display("Simulare SEU Finalizata!");
+        $display("Simulation done!");
         $display("Total Teste: %d", test_count);
         $display("Teste PASS : %d", pass_count);
         $display("Teste FAIL : %d", fail_count);

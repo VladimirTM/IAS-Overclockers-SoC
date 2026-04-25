@@ -9,6 +9,13 @@ module cpu_tb;
     wire [15:0] mem_out;
     wire mining_done;
 
+    // I/O peripheral signals
+    reg         ext_irq    = 1'b0;
+    reg  [15:0] kbd_data_in = 16'h0000;
+    reg         kbd_strobe  = 1'b0;
+    wire [15:0] disp_data_out;
+    wire        disp_we;
+
     cpu dut (
         .clk(clk),
         .rst_n(rst_n),
@@ -18,7 +25,12 @@ module cpu_tb;
         .Y_out(Y_out),
         .dr_out(dr_out),
         .mem_out(mem_out),
-        .mining_done(mining_done)
+        .mining_done(mining_done),
+        .ext_irq(ext_irq),
+        .kbd_data_in(kbd_data_in),
+        .kbd_strobe(kbd_strobe),
+        .disp_data_out(disp_data_out),
+        .disp_we(disp_we)
     );
 
     // Clock generation: 10ns period
@@ -77,7 +89,7 @@ module cpu_tb;
     initial begin
         $display("========================================");
         $display("CPU Comprehensive Test - All Instructions");
-        $display("Including: JMP, PUSH X/Y, POP X/Y, MOVR, BGT, BLT, BGE, BLE, BEQ, BNE, NOP");
+        $display("Including: JMP, PUSH X/Y, POP X/Y, MOVR, BGT, BLT, BGE, BLE, BEQ, BNE, NOP, EI, DI, OUT, IN");
         $display("========================================\n");
 
         // Reset
@@ -453,12 +465,37 @@ module cpu_tb;
         wait_for_pc(16'h0072, "POP X");
         check_test("POP X: X restored to 77", X_out == 16'd77);
 
+        // ==========================================
+        // I/O and Interrupt Enable/Disable
+        // ==========================================
+        $display("\n--- I/O and Interrupt Control ---\n");
+
+        // EI — enable interrupts (I_flag should go high)
+        wait_for_pc(16'h0073, "EI");
+        check_test("EI: I_flag set", dut.cu_inst.I_flag == 1'b1);
+
+        // DI — disable interrupts (I_flag should go low)
+        wait_for_pc(16'h0074, "DI");
+        check_test("DI: I_flag cleared", dut.cu_inst.I_flag == 1'b0);
+
+        // MOVI 42 — load value to write to display
+        wait_for_pc(16'h0075, "MOVI 42");
+        check_test("MOVI 42: A=42", A_out == 16'd42);
+
+        // OUT 16 — write A to display; check disp_we pulsed and disp_data_out=42
+        wait_for_pc(16'h0076, "OUT 16");
+        check_test("OUT 16: disp_data_out=42", dut.io_ctrl_inst.disp_data_out == 16'd42);
+
+        // IN 1 — read KBD_STATUS (no strobe → 0)
+        wait_for_pc(16'h0077, "IN 1");
+        check_test("IN 1: A=0 (KBD_STATUS, no key)", A_out == 16'd0);
+
         // Final MOVI 100 before END
-        wait_for_pc(16'h0073, "MOVI 100");
+        wait_for_pc(16'h0078, "MOVI 100");
         check_test("MOVI 100: A=100 (success)", A_out == 16'd100);
 
         // Wait for END
-        wait_for_pc(16'h0074, "END");
+        wait_for_pc(16'h0079, "END");
         check_test("END: CPU halted", dut.finish == 1);
 
         // ==========================================

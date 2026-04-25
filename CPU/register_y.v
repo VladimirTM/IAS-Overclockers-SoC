@@ -1,7 +1,7 @@
 // Y Register: general-purpose register with inc/dec
 module register_y (
     input clk,
-    input reset,
+    input rst_n,
     input ldY,
     input incrY,
     input decrY,
@@ -9,8 +9,8 @@ module register_y (
     output reg [15:0] Y
 );
 
-    always @(posedge clk or negedge reset) begin
-        if (!reset) begin
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
             Y <= 16'h0000;
         end
         else begin
@@ -23,6 +23,7 @@ module register_y (
             else if (decrY && !incrY) begin
                 Y <= Y - 1;
             end
+            // incrY && decrY: mutually exclusive per CU design — no change
         end
     end
 

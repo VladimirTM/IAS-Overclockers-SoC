@@ -33,7 +33,7 @@ task check_test;
             pass_count = pass_count + 1;
         end else begin
             $display("Test %2d FAIL: %s", test_count, test_name);
-            $display("  -> EROARE REZULTAT: S-a primit %h, se astepta %h", data_out, exp_rez);
+            $display("  -> FAIL: got %h, expected %h", data_out, exp_rez);
             fail_count = fail_count + 1;
         end
     end
@@ -101,7 +101,7 @@ initial begin
     check_test ("Hold Data Addr 256: data_out = 16'h0000", 16'h0000);
 
     $display("---------------------------------------");
-    $display("Simulare Finalizata!");
+    $display("Simulation done!");
     $display("Total Teste: %d", test_count);
     $display("Teste PASS : %d", pass_count);
     $display("Teste FAIL : %d", fail_count);
@@ -110,9 +110,7 @@ initial begin
     #100; $stop;
 end
 
-/* Nota: Modulul memory foloseste $readmemb("data_bin.txt", mem).
- Asigurati-va ca fisierul data_bin.txt exista in directorul simularii,
- altfel puteti primi un warning, dar testele de scriere/citire de mai sus vor functiona corect.
-*/
+/* memory.v uses $readmemb("data_bin.txt", mem); ensure the file exists in the sim directory,
+   otherwise write/read tests above still pass. */
 
 endmodule

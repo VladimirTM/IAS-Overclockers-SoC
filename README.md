@@ -49,7 +49,7 @@ This project demonstrates advanced concepts in digital design, including CPU arc
   - Python-based assembler for assembly-to-machine-code translation (supports comma-separated operands)
   - Interactive memory initialization tool
   - Comprehensive testbench suite
-- **Robust Testing**: 27 module testbenches with 629 test cases (all PASS)
+- **Robust Testing**: 27 module testbenches with 645 test cases (all PASS)
 - **Build Automation**: Makefile-based workflow with shell script wrappers
 - **Waveform Analysis**: VCD file generation for GTKWave debugging
 
@@ -247,7 +247,7 @@ OUT port : [15:10]=100111 | [9:0]=port_address
 | 33   | 0x021 | R/W | TIMER_PERIOD | Timer reload value; write also resets counter       |
 | 34   | 0x022 | R   | TIMER_COUNT  | Current counter value                               |
 | 48   | 0x030 | R/W | IER          | Interrupt Enable Register (4-bit)                   |
-| 49   | 0x031 | R   | IFR          | Interrupt Flag Register `[2:mining, 1:kbd, 0:timer]`|
+| 49   | 0x031 | R   | IFR          | Interrupt Flag Register `[3:ext, 2:mining, 1:kbd, 0:timer]`|
 | 64   | 0x040 | R   | MINE_HASH    | Latched mining hash; read clears mining_irq         |
 | 65   | 0x041 | R   | MINE_NONCE   | Latched mining nonce                                |
 
@@ -269,7 +269,7 @@ OUT port : [15:10]=100111 | [9:0]=port_address
 | 192     | MINE   | Address of MINE ISR        |
 | 193     | EXT    | Address of external ISR    |
 
-**Interrupt context save/restore:** On interrupt entry the CU automatically pushes FLAGS then PC onto the stack; on `IRET` it pops PC then FLAGS and calls `set_I`. The `I_flag` is internal to `cu.v` and is automatically cleared (`clr_I`) on interrupt entry so ISRs run with interrupts disabled.
+**Interrupt context save/restore:** On interrupt entry the CU automatically pushes FLAGS then PC onto the stack; on `IRET` it pops PC then FLAGS and calls `set_I`. The `I_flag` register lives inside `cu.v` and is exposed as the `I_flag_out` output port (wired to the interrupt controller); it is automatically cleared (`clr_I`) on interrupt entry so ISRs run with interrupts disabled.
 
 ### ASIP Extension
 
@@ -656,10 +656,10 @@ IAS-Overclockers/
 │   ├── alu_tb.v                 # ALU unit tests
 │   ├── memory_tb.v              # Memory module tests
 │   ├── accumulator_tb.v         # Accumulator register tests
-│   ├── cpu_interrupt_tb.v       # [NEW v3.1] End-to-end interrupt integration test (8 tests)
+│   ├── cpu_interrupt_tb.v       # [NEW v3.1] End-to-end interrupt integration test (17 tests)
 │   ├── cu_interrupt_tb.v        # [NEW v3.1] CU interrupt states 78-97 tests (52 tests)
 │   ├── interrupt_controller_tb.v# [NEW v3.1] Interrupt controller tests (34 tests)
-│   ├── io_controller_tb.v       # [NEW v3.0] I/O controller tests (38 tests)
+│   ├── io_controller_tb.v       # [NEW v3.0] I/O controller tests (44 tests)
 │   ├── mux_ar_tb.v              # Address mux tests (updated: AR_EXT routing, 8 tests)
 │   ├── mux_dr_tb.v              # Data mux tests (updated: io_data/flags paths, 14 tests)
 │   ├── register_x_tb.v          # X register tests
@@ -717,13 +717,13 @@ The project includes comprehensive testing at multiple levels:
 | accumulator_tb.v | 10 | ✓ PASS | |
 | alu_tb.v | 46 | ✓ PASS | |
 | ar_tb.v | 14 | ✓ PASS | Updated: AR_EXT port added |
-| cpu_interrupt_tb.v | 8 | ✓ PASS | **NEW v3.1**: end-to-end interrupt integration (EI→WAIT→ISR→IRET) |
+| cpu_interrupt_tb.v | 17 | ✓ PASS | **NEW v3.1**: end-to-end interrupt integration (EI→WAIT→ISR→IRET); EXT, KBD, TIMER ISRs; priority arbitration |
 | cu_interrupt_tb.v | 52 | ✓ PASS | **NEW v3.1**: all 20 interrupt CU states (78–97) + edge cases |
 | cu_tb.v | 251 | ✓ PASS | Updated: INTR_CHECK state in fetch cycle |
 | data_register_tb.v | 26 | ✓ PASS | Updated: io_data/flags ports added |
-| flags_tb.v | 16 | ✓ PASS | Updated: use_packed_flags + lower-bits + priority tests |
+| flags_tb.v | 17 | ✓ PASS | Updated: alu_exc port added; div-by-zero test added |
 | interrupt_controller_tb.v | 34 | ✓ PASS | **NEW v3.1**: 4-source priority, masking, ack, full priority matrix |
-| io_controller_tb.v | 38 | ✓ PASS | **NEW v3.0**: kbd, display, timer, mining, IER/IFR + edge cases |
+| io_controller_tb.v | 44 | ✓ PASS | **NEW v3.0**: kbd, display, timer, mining, IER/IFR + edge cases; IER masking verification |
 | ir_tb.v | 6 | ✓ PASS | |
 | memory_tb.v | 8 | ✓ PASS | |
 | mining_core_tb.v | 3 | ✓ PASS | |
@@ -740,7 +740,7 @@ The project includes comprehensive testing at multiple levels:
 | rgst_tb.v | 7 | ✓ PASS | |
 | seu_tb.v | 6 | ✓ PASS | |
 | stack_pointer_tb.v | 7 | ✓ PASS | |
-| **Total** | **629** | **✓ PASS** | 27 testbenches, 0 failures |
+| **Total** | **645** | **✓ PASS** | 27 testbenches, 0 failures |
 
 **Control Unit Testing:**
 
@@ -869,7 +869,13 @@ This project was developed as a collaborative team effort for the FIC course, de
    - `flags.v` `use_packed_flags` path for IRET FLAGS restore from `DR[15:12]`
    - IVT at addresses 190–193; `saved_irq_id` register ensures correct IVT slot after intr_ack
    - Assembler support for all 4 new instructions; extended test suite covers EI/DI/IRET/WAIT/IN/OUT/branch/immediate encoding
-   - 27 testbenches, 629 tests, 0 failures (includes 52-test `cu_interrupt_tb.v`, 34-test `interrupt_controller_tb.v`, 8-test `cpu_interrupt_tb.v` end-to-end)
+   - 27 testbenches, 645 tests, 0 failures (includes 52-test `cu_interrupt_tb.v`, 34-test `interrupt_controller_tb.v`, 17-test `cpu_interrupt_tb.v` end-to-end)
+
+6. ✅ **Code Quality & Test Infrastructure (v3.2)**
+   - Fixed README documentation bug: FSM state count corrected from 72 to 98 states
+   - Translated all Romanian text in 15 testbench files to English (comments, `$display` failure strings, test name strings)
+   - Fixed `run_all_testbenches.sh` grep pattern: now correctly counts all 27 testbenches (previously silently undercounted 4 due to `"Pass:"` format not matching)
+   - All 27 testbenches, 645 tests confirmed passing with the corrected script
 
 ---
 
@@ -878,7 +884,7 @@ This project was developed as a collaborative team effort for the FIC course, de
 ### Control Flow
 
 **Instruction Execution Cycle:**
-The CPU uses a 72-state Finite State Machine (FSM) in the control unit to manage instruction execution:
+The CPU uses a 98-state Finite State Machine (FSM) in the control unit to manage instruction execution:
 
 1. **Fetch**: Load instruction from memory at PC address
 2. **Decode**: Parse opcode and operands
@@ -953,8 +959,11 @@ The 4-bit Flag Register stores condition codes for branch instructions:
 
 **Flags Partially Updated (Z, N only):**
 
-- Register increment/decrement (INC, DEC)
 - Register moves (MOV, MOVR)
+
+**Flags Partially Updated (Z, N always; C, O on wrap only):**
+
+- Register increment/decrement (INC, DEC): C=1 if value wraps (0xFFFF+1 or 0x0000-1); O=1 on signed boundary wrap (0x7FFF→0x8000 or 0x8000→0x7FFF)
 
 **Flags NOT Updated By:**
 
@@ -1031,6 +1040,7 @@ These are intentional design choices for the educational scope of the project:
 | v2.1 | ASIP Mining Extension | SHA-256-based MINE instruction, mining core |
 | v3.0 | Memory-Mapped I/O | IN/OUT instructions, io_controller, FSM states 72–77 |
 | v3.1 | Interrupt System | EI/DI/IRET/WAIT, interrupt_controller, FSM states 78–97 |
+| v3.2 | Code Quality & Test Infrastructure | README bug fix (FSM state count), English-only testbenches, script counting fix |
 
 ---
 
@@ -1099,6 +1109,6 @@ For questions about this project or collaboration opportunities, please refer to
 
 ---
 
-**Last Updated**: March 2026
-**Project Status**: Active Development — MMIO complete, Interrupt System in progress
-**Version**: 3.0 (Memory-Mapped I/O foundation: io_controller, IN/OUT instructions, mux_ar AR_EXT path, mux_dr io_data + packed-flags paths, 6 new CU states 72–77, assembler IN/OUT encoding, 34-test io_controller_tb; 24 module testbenches, 524 tests, all passing)
+**Last Updated**: April 2026
+**Project Status**: Complete — MMIO + Interrupt System implemented and fully tested
+**Version**: 3.2 (Code quality pass: README FSM state count corrected, all testbench comments and strings in English, test script counting fixed; 27 module testbenches, 645 tests, all passing)

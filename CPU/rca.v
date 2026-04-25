@@ -6,30 +6,30 @@ module rca(
   output cout
 );
 
-wire [16:0] carryIntermediar;
+wire [16:0] carryIntermediate;
 
 generate
   genvar i;
   for(i = 0; i < 17; i = i + 1) begin : vect
-    if(i == 0) // first bit: carry-in from module input
+    if(i == 0)
       fac FAC0(
         .x(x[0]),
         .y(y[0]),
         .cin(cin),
         .z(z[0]),
-        .cout(carryIntermediar[0])
+        .cout(carryIntermediate[0])
       );
-    else // remaining bits: carry ripples from previous stage
+    else
       fac FAC(
         .x(x[i]),
         .y(y[i]),
-        .cin(carryIntermediar[i - 1]),
+        .cin(carryIntermediate[i - 1]),
         .z(z[i]),
-        .cout(carryIntermediar[i])
+        .cout(carryIntermediate[i])
       );
   end
 endgenerate
 
-assign cout = carryIntermediar[16]; // final carry-out
+assign cout = carryIntermediate[16];
 
 endmodule

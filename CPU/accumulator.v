@@ -1,7 +1,7 @@
 // Accumulator: ALU result register with immediate support
 module accumulator (
     input clk,
-    input reset,
+    input rst_n,
     input ldA,
     input use_imm,
     input [15:0] D_in,
@@ -9,8 +9,8 @@ module accumulator (
     output reg [15:0] A
 );
 
-    always @(posedge clk or negedge reset) begin
-        if (!reset) begin
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
             A <= 16'h0000;
         end
         else begin

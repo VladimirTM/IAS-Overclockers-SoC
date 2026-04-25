@@ -122,6 +122,8 @@ ALU este o unitate multi-cycle cu 13 tipuri de operații:
 | LD Y | 000001 | 1 + adresă 9 biți | Y ← mem[addr] |
 | ST X | 000010 | 0 + adresă 9 biți | mem[addr] ← X |
 | ST Y | 000010 | 1 + adresă 9 biți | mem[addr] ← Y |
+
+> **Limitare adresare directă**: câmpul de adresă din instrucțiune are 9 biți (IR[8:0]), deci LD/ST pot accesa direct doar locațiile **0x000–0x1FF** (primele 512 cuvinte). Jumătatea superioară a memoriei (0x200–0x3FF) este accesibilă indirect prin registrele X/Y folosite ca pointer (ex. `LD X` după o instrucțiune care încarcă adresa dorită). Instrucțiunile de salt folosesc 10 biți (IR[9:0]) și pot atinge toată memoria.
 | PUSH X | 100011 | 0 + zeros | mem[SP] ← X, SP-- |
 | PUSH Y | 100011 | 1 + zeros | mem[SP] ← Y, SP-- |
 | POP X | 100100 | 0 + zeros | X ← mem[++SP] |
@@ -599,8 +601,8 @@ stateDiagram-v2
 | 0 – 189 | **Program** | Instrucțiuni încărcate de assembler |
 | 190 | **IVT[0]** | Adresa ISR pentru TIMER |
 | 191 | **IVT[1]** | Adresa ISR pentru KBD |
-| 192 | **IVT[2]** | Adresa ISR pentru EXT |
-| 193 | **IVT[3]** | Adresa ISR pentru MINING |
+| 192 | **IVT[2]** | Adresa ISR pentru MINING |
+| 193 | **IVT[3]** | Adresa ISR pentru EXT |
 | 194 – 199 | Rezervat | — |
 | 200 – 1023 | **Date** | Variabile, stack, heap |
 
@@ -632,8 +634,8 @@ Stack-ul crește descendent de la o adresă mare din zona de date. SP este iniț
 |---|---|---|---|---|---|
 | 0 | TIMER | 1 (cea mai mare) | Counter == period (pulse) | mem[190] | IER[0] |
 | 1 | KBD | 2 | Rising edge kbd_strobe | mem[191] | IER[1] |
-| 2 | MINING | 3 | Rising edge mining_done | mem[193] | IER[2] |
-| 3 | EXT | 4 (cea mai mică) | Pin ext_irq la nivel high | mem[192] | IER[3] |
+| 2 | MINING | 3 | Rising edge mining_done | mem[192] | IER[2] |
+| 3 | EXT | 4 (cea mai mică) | Pin ext_irq la nivel high | mem[193] | IER[3] |
 
 ### 7.2 Ciclul de viață al unui interrupt
 
@@ -687,10 +689,10 @@ FLAGS sunt salvate în nibble-ul superior al cuvântului din stack:
 
 | Testbench | Tip | Acoperire |
 |---|---|---|
-| cpu_tb.v | Integrare | 105+ cazuri — toate instrucțiunile de bază, generare flags |
-| cpu_interrupt_tb.v | Integrare | Save/restore context, IRET, tratare imbricată |
+| cpu_tb.v | Integrare | 110 cazuri — toate instrucțiunile de bază + EI/DI/OUT/IN, generare flags |
+| cpu_interrupt_tb.v | Integrare | 17 cazuri — save/restore context, IRET; ISR-uri EXT/KBD/TIMER; arbitraj prioritate |
 | cu_interrupt_tb.v | FSM | Stările 72–97: căi FSM I/O și interrupt |
-| io_controller_tb.v | Periferic | Toate adresele de port, KBD/DISP/TIMER/MINE |
+| io_controller_tb.v | Periferic | 44 cazuri — toate adresele de port, KBD/DISP/TIMER/MINE; verificare mascare IER |
 | interrupt_controller_tb.v | Periferic | Arbitraj prioritate, mascare IER, intr_ack |
 | mining_core_tb.v | ASIP | Corectitudine hash SHA-256, căutare nonce |
 | flags_tb.v | Unitar | Z/N/C/O în toate modurile: ALU, direct, packed |
@@ -700,7 +702,7 @@ FLAGS sunt salvate în nibble-ul superior al cuvântului din stack:
 | mux_ar/dr/alu_tb.v | Unitar | Corectitudine selecție multiplexor |
 | register_x/y/accumulator_tb.v | Unitar | Operații load, increment, decrement |
 
-**Total: 28 testbench-uri, 480+ cazuri de test**
+**Total: 27 testbench-uri module + cpu_tb.v integrare = 645+ cazuri de test (toate PASS)**
 
 ### 8.2 Teste assembler
 

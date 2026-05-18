@@ -854,6 +854,54 @@ module cu_tb;
 
         /*
         ========================================
+             Instruction Test: MOVR
+        ========================================
+        */
+
+        // MOVR X → A  (src=X=01, dst=A=00)
+        reset_to_decode();
+        opcode = OP_MOVR;
+        ir_out = {OP_MOVR, 2'b01, 2'b00, 6'b000000};
+
+        // MOVR_1: ldDR=1, condDR=001 (read X)
+        @(negedge clk); check_test("MOVR X->A (Step1: ldDR=1, condDR=001)", 33'h024000000);
+
+        // MOVR_2: ldA=1, use_dr_for_a=1, ldFLAG=1, use_direct_flag=1, use_movr_flags=1
+        @(negedge clk); check_test("MOVR X->A (Step2: ldA,use_dr_for_a,flags)", 33'h0000A0086);
+
+        // Return to LOAD_ADDR
+        @(negedge clk); check_test("Return to LOAD_ADDR after MOVR X->A", 33'h100000000);
+
+        // MOVR A → Y  (src=A=00, dst=Y=10)
+        reset_to_decode();
+        opcode = OP_MOVR;
+        ir_out = {OP_MOVR, 2'b00, 2'b10, 6'b000000};
+
+        // MOVR_1: ldDR=1, condDR=101 (read A)
+        @(negedge clk); check_test("MOVR A->Y (Step1: ldDR=1, condDR=101)", 33'h034000000);
+
+        // MOVR_2: ldY=1, ldFLAG=1, use_direct_flag=1, use_movr_flags=1
+        @(negedge clk); check_test("MOVR A->Y (Step2: ldY,flags)", 33'h000120082);
+
+        // Return to LOAD_ADDR
+        @(negedge clk); check_test("Return to LOAD_ADDR after MOVR A->Y", 33'h100000000);
+
+        // MOVR Y → X  (src=Y=10, dst=X=01)
+        reset_to_decode();
+        opcode = OP_MOVR;
+        ir_out = {OP_MOVR, 2'b10, 2'b01, 6'b000000};
+
+        // MOVR_1: ldDR=1, condDR=010 (read Y)
+        @(negedge clk); check_test("MOVR Y->X (Step1: ldDR=1, condDR=010)", 33'h028000000);
+
+        // MOVR_2: ldX=1, ldFLAG=1, use_direct_flag=1, use_movr_flags=1
+        @(negedge clk); check_test("MOVR Y->X (Step2: ldX,flags)", 33'h000220082);
+
+        // Return to LOAD_ADDR
+        @(negedge clk); check_test("Return to LOAD_ADDR after MOVR Y->X", 33'h100000000);
+
+        /*
+        ========================================
              Instruction Test: HALT
         ========================================
         */

@@ -56,7 +56,13 @@ _REG_MAP = {'A': '00', 'X': '01', 'Y': '10'}
 
 def _reg_bit(operand: str) -> str:
     """Return '0' for X register, '1' for Y register (regaddr field)."""
-    return '0' if operand.strip().upper() == 'X' else '1'
+    reg = operand.strip().upper()
+    if reg == 'X':
+        return '0'
+    elif reg == 'Y':
+        return '1'
+    else:
+        raise ValueError(f"Invalid register '{reg}': expected X or Y")
 
 
 def to_twos_complement(value, bits):
@@ -106,7 +112,10 @@ def encode_instruction(instruction, labels):
     # LD, ST — opcode + reg_bit(0=X,1=Y) + 9-bit address
     if op_value in _OP_MEMORY:
         _require_words(words, 3, opcode)
-        address = format(int(parse_operand(words[2])), '09b')
+        addr_val = int(parse_operand(words[2]))
+        if not (0 <= addr_val <= 511):
+            raise ValueError(f"Memory address {addr_val} out of 9-bit range [0, 511]")
+        address = format(addr_val, '09b')
         return binary + _reg_bit(parse_operand(words[1])) + address
 
     # IN, OUT — opcode + 10-bit port address

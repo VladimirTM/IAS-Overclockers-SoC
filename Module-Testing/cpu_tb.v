@@ -240,10 +240,15 @@ module cpu_tb;
         check_test("NOTI 0: A=FFD5", A_out == 16'hFFD5);
 
         wait_for_pc(16'h002C, "CMPI 100");
-        check_test("CMPI 100: executed", 1);
+        // A=0xFFD5 (-43), 0xFFD5 - 100 = 0xFF71 (-143): Z=0, N=1, C=1 (no borrow), O=0
+        check_test("CMPI 100: Z=0 (not equal)", dut.Z_flag == 1'b0);
+        check_test("CMPI 100: N=1 (negative result)", dut.N_flag == 1'b1);
+        check_test("CMPI 100: O=0 (no overflow)", dut.O_flag == 1'b0);
 
         wait_for_pc(16'h002D, "TSTI 85");
-        check_test("TSTI 85: executed", 1);
+        // A=0xFFD5, 0xFFD5 & 0x55 = 0x55 (non-zero): Z=0, N=0
+        check_test("TSTI 85: Z=0 (non-zero AND result)", dut.Z_flag == 1'b0);
+        check_test("TSTI 85: N=0 (bit15 clear)", dut.N_flag == 1'b0);
 
         // ==========================================
         // Register Manipulation
@@ -309,7 +314,9 @@ module cpu_tb;
         check_test("MOV X, 5: X=5", X_out == 16'd5);
 
         wait_for_pc(16'h003E, "CMP X");
-        check_test("CMP X: compare 10 vs 5", 1);
+        // 10 - 5 = 5: Z=0, N=0 (positive)
+        check_test("CMP X: 10>5 Z=0", dut.Z_flag == 1'b0);
+        check_test("CMP X: 10>5 N=0", dut.N_flag == 1'b0);
 
         wait_for_pc(16'h0040, "BGT bgt_pass");
         check_test("BGT: branched (10 > 5)", pc_out == 16'h0040);
@@ -325,7 +332,9 @@ module cpu_tb;
         check_test("MOV X, 7: X=7", X_out == 16'd7);
 
         wait_for_pc(16'h0044, "CMP X");
-        check_test("CMP X: compare 3 vs 7", 1);
+        // 3 - 7 = -4: Z=0, N=1 (negative)
+        check_test("CMP X: 3<7 Z=0", dut.Z_flag == 1'b0);
+        check_test("CMP X: 3<7 N=1", dut.N_flag == 1'b1);
 
         wait_for_pc(16'h0046, "BLT blt_pass");
         check_test("BLT: branched (3 < 7)", pc_out == 16'h0046);
@@ -341,7 +350,9 @@ module cpu_tb;
         check_test("MOV X, 5: X=5", X_out == 16'd5);
 
         wait_for_pc(16'h004A, "CMP X");
-        check_test("CMP X: compare 10 vs 5", 1);
+        // 10 - 5 = 5: Z=0, N=0 (positive)
+        check_test("CMP X: 10>=5 Z=0", dut.Z_flag == 1'b0);
+        check_test("CMP X: 10>=5 N=0", dut.N_flag == 1'b0);
 
         wait_for_pc(16'h004C, "BGE bge_pass");
         check_test("BGE: branched (10 >= 5)", pc_out == 16'h004C);
@@ -357,7 +368,9 @@ module cpu_tb;
         check_test("MOV X, 5: X=5", X_out == 16'd5);
 
         wait_for_pc(16'h0050, "CMP X");
-        check_test("CMP X: compare 5 vs 5 (equal)", 1);
+        // 5 - 5 = 0: Z=1, N=0
+        check_test("CMP X: 5==5 Z=1", dut.Z_flag == 1'b1);
+        check_test("CMP X: 5==5 N=0", dut.N_flag == 1'b0);
 
         wait_for_pc(16'h0052, "BLE ble_pass");
         check_test("BLE: branched (5 <= 5)", pc_out == 16'h0052);
@@ -379,7 +392,9 @@ module cpu_tb;
         check_test("MOV X, 5: X=5", X_out == 16'd5);
 
         wait_for_pc(16'h0056, "CMP X");
-        check_test("CMP X: compare 5 vs 5 (equal, Z=1)", 1);
+        // 5 - 5 = 0: Z=1, N=0
+        check_test("CMP X: 5==5 Z=1 (BEQ)", dut.Z_flag == 1'b1);
+        check_test("CMP X: 5==5 N=0 (BEQ)", dut.N_flag == 1'b0);
 
         wait_for_pc(16'h0058, "BEQ beq_pass");
         check_test("BEQ: branched (5 == 5)", pc_out == 16'h0058);
@@ -396,7 +411,9 @@ module cpu_tb;
         check_test("MOV X, 10: X=10", X_out == 16'd10);
 
         wait_for_pc(16'h005C, "CMP X");
-        check_test("CMP X: compare 5 vs 10 (not equal, Z=0)", 1);
+        // 5 - 10 = -5: Z=0, N=1 (negative)
+        check_test("CMP X: 5!=10 Z=0 (BNE)", dut.Z_flag == 1'b0);
+        check_test("CMP X: 5!=10 N=1 (BNE)", dut.N_flag == 1'b1);
 
         wait_for_pc(16'h005E, "BNE bne_pass");
         check_test("BNE: branched (5 != 10)", pc_out == 16'h005E);
@@ -414,7 +431,9 @@ module cpu_tb;
         check_test("MOVI 50: A=50", A_out == 16'd50);
 
         wait_for_pc(16'h0061, "CMP X");
-        check_test("CMP X: compare 50 vs 10 (non-zero)", 1);
+        // 50 - 10 = 40: Z=0, N=0 (positive)
+        check_test("CMP X: 50>10 Z=0 (BRZ)", dut.Z_flag == 1'b0);
+        check_test("CMP X: 50>10 N=0 (BRZ)", dut.N_flag == 1'b0);
 
         wait_for_pc(16'h0064, "BRZ/BRA brz_pass");
         check_test("BRZ skipped, BRA taken", pc_out == 16'h0064);
@@ -427,7 +446,9 @@ module cpu_tb;
         check_test("MOVI -5: A=0xFFFB", A_out == 16'hFFFB);
 
         wait_for_pc(16'h0067, "CMP X");
-        check_test("CMP X: compare -5 vs 10 (negative)", 1);
+        // -5 - 10 = -15: Z=0, N=1 (negative)
+        check_test("CMP X: -5<10 Z=0 (BRN)", dut.Z_flag == 1'b0);
+        check_test("CMP X: -5<10 N=1 (BRN)", dut.N_flag == 1'b1);
 
         wait_for_pc(16'h0069, "BRN brn_pass");
         check_test("BRN: branched (negative result)", pc_out == 16'h0069);

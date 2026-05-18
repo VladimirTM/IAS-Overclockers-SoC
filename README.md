@@ -49,9 +49,10 @@ This project demonstrates advanced concepts in digital design, including CPU arc
   - Python-based assembler for assembly-to-machine-code translation (supports comma-separated operands)
   - Interactive memory initialization tool
   - Comprehensive testbench suite
-- **Robust Testing**: 27 module testbenches with 645 test cases (all PASS)
+- **Robust Testing**: 27 module testbenches with 654 test cases (all PASS)
 - **Build Automation**: Makefile-based workflow with shell script wrappers
 - **Waveform Analysis**: VCD file generation for GTKWave debugging
+- **Web-Based Interactive Simulator**: Browser IDE with assembly editor, keyboard input, and real-time display output; Flask backend orchestrates the full assembler → simulation pipeline; `python3 server.py` then open `http://localhost:5000`
 
 ---
 
@@ -476,6 +477,20 @@ View all available make targets:
 make help
 ```
 
+### Web Simulator
+
+Run the interactive browser-based CPU simulator:
+
+```bash
+pip install flask
+python3 server.py
+# Open http://localhost:5000 in your browser
+```
+
+Write assembly code in the editor, optionally provide keyboard input, and click **Run** to execute the simulation and see display output. The server compiles `web_io_tb.v` on each request and streams `DISP:` output back to the browser.
+
+An alternate cyberpunk-themed UI is available at `http://localhost:5000/futuristic`.
+
 ---
 
 ## Writing Assembly Programs
@@ -672,6 +687,20 @@ IAS-Overclockers/
 ├── data_init.py                  # Interactive memory initialization (supports negative values)
 ├── data_bin.txt                  # Generated machine code + initialized memory
 │
+├── Demo-Programs/                    # Example assembly programs
+│   ├── io_interrupt_demo.asm        # I/O and interrupt system demonstration
+│   ├── program1.asm                 # Example program 1
+│   ├── program2.asm                 # Example program 2
+│   ├── program3.asm                 # Example program 3
+│   ├── program4.asm                 # Example program 4
+│   └── program5.asm                 # Example program 5
+│
+├── server.py                         # Flask web server for browser-based simulation
+├── web/                              # Web frontend
+│   ├── index.html                   # Single-page assembly editor + display output UI
+│   └── index_futuristic.html        # Cyberpunk/retro-futuristic theme variant
+├── web_io_tb.v                       # Testbench for web simulator (keyboard feeder + DISP: output)
+│
 ├── .gitignore                    # Ignores __pycache__, *.pyc, *.out, *.vcd
 ├── Makefile                      # Build automation and test targets
 ├── run_cpu_test.sh               # General test runner script
@@ -719,7 +748,7 @@ The project includes comprehensive testing at multiple levels:
 | ar_tb.v | 14 | ✓ PASS | Updated: AR_EXT port added |
 | cpu_interrupt_tb.v | 17 | ✓ PASS | **NEW v3.1**: end-to-end interrupt integration (EI→WAIT→ISR→IRET); EXT, KBD, TIMER ISRs; priority arbitration |
 | cu_interrupt_tb.v | 52 | ✓ PASS | **NEW v3.1**: all 20 interrupt CU states (78–97) + edge cases |
-| cu_tb.v | 251 | ✓ PASS | Updated: INTR_CHECK state in fetch cycle |
+| cu_tb.v | 260 | ✓ PASS | Updated: INTR_CHECK state in fetch cycle; MOVR tests added (9 tests) |
 | data_register_tb.v | 26 | ✓ PASS | Updated: io_data/flags ports added |
 | flags_tb.v | 17 | ✓ PASS | Updated: alu_exc port added; div-by-zero test added |
 | interrupt_controller_tb.v | 34 | ✓ PASS | **NEW v3.1**: 4-source priority, masking, ack, full priority matrix |
@@ -740,11 +769,11 @@ The project includes comprehensive testing at multiple levels:
 | rgst_tb.v | 7 | ✓ PASS | |
 | seu_tb.v | 6 | ✓ PASS | |
 | stack_pointer_tb.v | 7 | ✓ PASS | |
-| **Total** | **645** | **✓ PASS** | 27 testbenches, 0 failures |
+| **Total** | **654** | **✓ PASS** | 27 testbenches, 0 failures |
 
 **Control Unit Testing:**
 
-- `cu_tb.v`: 251 FSM tests covering all non-interrupt states; updated for INTR_CHECK fetch insertion
+- `cu_tb.v`: 260 FSM tests covering all non-interrupt states; updated for INTR_CHECK fetch insertion; MOVR A→X, X→Y, Y→X all variants tested
 - `cu_interrupt_tb.v`: 52 tests covering all 20 new interrupt states plus edge cases:
   - EI_1 (set_I=1), DI_1 (clr_I=1)
   - INTR_CHECK: passes to DECODE when I_flag=0; fires INTR_SAVE_1 when I_flag=1 and intr_pending=1
@@ -797,11 +826,13 @@ Processing: cu_tb.v
 Test  1 PASS: State LOAD_ADDR: ldAR=1
 Test  2 PASS: State LOAD_INSTR: ldDR=ldIR=incPC=1
 ...
-Test 251 PASS: State HALT: finish=1
+Test 251 PASS: MOVR X->A (Step1: ldDR=1, condDR=001)
+...
+Test 260 PASS: State HALT: finish=1
 ---------------------------------------
 Simulare Finalizata!
-Total Teste:         251
-Teste PASS :         251
+Total Teste:         260
+Teste PASS :         260
 Teste FAIL :           0
 ---------------------------------------
 ```
@@ -869,13 +900,29 @@ This project was developed as a collaborative team effort for the FIC course, de
    - `flags.v` `use_packed_flags` path for IRET FLAGS restore from `DR[15:12]`
    - IVT at addresses 190–193; `saved_irq_id` register ensures correct IVT slot after intr_ack
    - Assembler support for all 4 new instructions; extended test suite covers EI/DI/IRET/WAIT/IN/OUT/branch/immediate encoding
-   - 27 testbenches, 645 tests, 0 failures (includes 52-test `cu_interrupt_tb.v`, 34-test `interrupt_controller_tb.v`, 17-test `cpu_interrupt_tb.v` end-to-end)
+   - 27 testbenches, 654 tests, 0 failures (includes 52-test `cu_interrupt_tb.v`, 34-test `interrupt_controller_tb.v`, 17-test `cpu_interrupt_tb.v` end-to-end)
 
 6. ✅ **Code Quality & Test Infrastructure (v3.2)**
    - Fixed README documentation bug: FSM state count corrected from 72 to 98 states
    - Translated all Romanian text in 15 testbench files to English (comments, `$display` failure strings, test name strings)
    - Fixed `run_all_testbenches.sh` grep pattern: now correctly counts all 27 testbenches (previously silently undercounted 4 due to `"Pass:"` format not matching)
-   - All 27 testbenches, 645 tests confirmed passing with the corrected script
+   - All 27 testbenches, 654 tests confirmed passing with the corrected script
+
+7. ✅ **Web-Based Interactive Simulator (v4.0)**
+   - `server.py`: Flask backend orchestrating assembler → `data_init` → Verilog compile → `vvp` simulation pipeline; thread-safe (one simulation at a time); timeout detection; parses `DISP:` output lines
+   - `web/index.html`: Dark-themed single-page app with assembly code editor (left pane) and display output (right pane); keyboard input field
+   - `web_io_tb.v`: Specialized testbench for web mode; reads up to 256 characters from `kbd_input.txt`; strobes one character at a time with 2000-cycle consumption timeout; prints `DISP:<char>` on each display write; hard 5 ms simulation timeout
+
+8. ✅ **Bug Fixes & Test Coverage (v4.1)**
+   - **Assembler** (`CPU-Assembler/main.py`): `_reg_bit()` now validates register names and raises `ValueError` for anything other than X or Y; previously `LD A, addr` silently encoded as `LD Y, addr`
+   - **run_alu_tests.sh**: Fixed all 14 source paths from non-existent `../ALU/` to correct `../CPU/`; script was completely broken and could not compile
+   - **data_register_tb.v**: Connected `io_data` and all flag inputs to real `reg` variables; CondDR=110 and CondDR=111 tests now drive and verify non-zero values (previously always passed regardless of DUT state)
+   - **input_sequencer.v**: `core_start` was re-asserted in the DONE state, keeping it high for 2 consecutive cycles; now cleared in DONE for a single-cycle pulse
+   - **mining_core.v**: Added nonce overflow guard in CHECK state; when `current_nonce == 16'hFFFF`, transitions to DONE_STATE instead of wrapping to 0 and looping forever
+   - **cu_tb.v**: Added 9 MOVR tests covering all three register combinations (X→A, A→Y, Y→X); MOVR had zero coverage previously; total tests 251 → 260
+   - **mining_core_tb.v**: Replaced `@(posedge done)` with `while (!done) @(posedge clk)` to avoid missing a 1-cycle `done` pulse
+   - **server.py**: Per-request UUID suffixes on temp files (`web_temp_*.asm`, `data_bin_tmp_*.txt`, `web_io_tb_sim_*`) to prevent stale-file interference on server restart
+   - **Makefile**: Removed redundant explicit `cpu_all_instructions_tb.vcd` delete (already covered by `*.vcd` wildcard)
 
 ---
 
@@ -1041,6 +1088,8 @@ These are intentional design choices for the educational scope of the project:
 | v3.0 | Memory-Mapped I/O | IN/OUT instructions, io_controller, FSM states 72–77 |
 | v3.1 | Interrupt System | EI/DI/IRET/WAIT, interrupt_controller, FSM states 78–97 |
 | v3.2 | Code Quality & Test Infrastructure | README bug fix (FSM state count), English-only testbenches, script counting fix |
+| v4.0 | Web-Based Interactive Simulator | Flask server + browser IDE + web_io_tb.v testbench |
+| v4.1 | Bug Fixes & Test Coverage | Assembler register validation, run_alu_tests.sh paths, non-trivial mux tests, input_sequencer core_start pulse, mining nonce overflow guard, MOVR tests (+9), done-signal polling fix, UUID temp files |
 
 ---
 
@@ -1109,6 +1158,6 @@ For questions about this project or collaboration opportunities, please refer to
 
 ---
 
-**Last Updated**: April 2026
-**Project Status**: Complete — MMIO + Interrupt System implemented and fully tested
-**Version**: 3.2 (Code quality pass: README FSM state count corrected, all testbench comments and strings in English, test script counting fixed; 27 module testbenches, 645 tests, all passing)
+**Last Updated**: May 2026
+**Project Status**: Active — Bug fixes and test coverage improvements
+**Version**: 4.0 (Bug fixes: assembler validation, nonce overflow guard, MOVR test coverage +9, mux test correctness; 27 module testbenches, 654 tests, all passing)

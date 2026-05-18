@@ -16,6 +16,8 @@ module data_register_tb;
     reg [15:0] A;
     reg [2:0]  CondDR;
     wire [15:0] mux_out;
+    reg [15:0] io_data_tb;
+    reg        flags_Z_tb, flags_N_tb, flags_C_tb, flags_O_tb;
 
     data_register uut_dr (
         .ldDR(ldDR),
@@ -32,11 +34,11 @@ module data_register_tb;
         .PC(PC),
         .IMM(IMM),
         .A(A),
-        .io_data(16'h0000),
-        .flags_Z(1'b0),
-        .flags_N(1'b0),
-        .flags_C(1'b0),
-        .flags_O(1'b0),
+        .io_data(io_data_tb),
+        .flags_Z(flags_Z_tb),
+        .flags_N(flags_N_tb),
+        .flags_C(flags_C_tb),
+        .flags_O(flags_O_tb),
         .CondDR(CondDR),
         .out(mux_out)
     );
@@ -111,6 +113,11 @@ endtask
         IMM = 16'hDEAD;
         A = 16'hABCD;
         CondDR = 3'b000;
+        io_data_tb = 16'h0000;
+        flags_Z_tb = 1'b0;
+        flags_N_tb = 1'b0;
+        flags_C_tb = 1'b0;
+        flags_O_tb = 1'b0;
         
         /*
         ========================================
@@ -203,15 +210,19 @@ endtask
         
         check_test_MUX("CondDR=101 (A): mux_out = A", 16'hABCD);
         
+        io_data_tb = 16'hBEEF;
         CondDR = 3'b110;
         #1;
-        
-        check_test_MUX("CondDR=110 (io_data=0): mux_out = 16'h0000", 16'h0000);
 
+        check_test_MUX("CondDR=110 (io_data=BEEF): mux_out = 16'hBEEF", 16'hBEEF);
+
+        // Z=1 N=0 C=1 O=0 → packed = {1,0,1,0,12'b0} = 16'hA000
+        flags_Z_tb = 1'b1; flags_N_tb = 1'b0;
+        flags_C_tb = 1'b1; flags_O_tb = 1'b0;
         CondDR = 3'b111;
         #1;
 
-        check_test_MUX("CondDR=111 (flags=0): mux_out = 16'h0000", 16'h0000);
+        check_test_MUX("CondDR=111 (Z=1,C=1): mux_out = 16'hA000", 16'hA000);
         
         /*
         ========================================
@@ -263,18 +274,21 @@ endtask
         check_test("Selected A -> DR_out = A", 16'hABCD);
         
         @ (negedge clk);
+        io_data_tb = 16'hBEEF;
         CondDR = 3'b110;
         #1;
         DR_in = mux_out;
         @ (negedge clk);
-        check_test("Selected io_data=0 (110) -> DR_out = 16'h0000", 16'h0000);
+        check_test("Selected io_data=BEEF (110) -> DR_out = 16'hBEEF", 16'hBEEF);
 
         @ (negedge clk);
+        flags_Z_tb = 1'b1; flags_N_tb = 1'b0;
+        flags_C_tb = 1'b1; flags_O_tb = 1'b0;
         CondDR = 3'b111;
         #1;
         DR_in = mux_out;
         @ (negedge clk);
-        check_test("Selected flags=0 (111) -> DR_out = 16'h0000", 16'h0000);
+        check_test("Selected flags Z=1,C=1 (111) -> DR_out = 16'hA000", 16'hA000);
         
         /*
         ========================================

@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IAS-Overclockers CPU Simulator</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #090d1e;
+    color: #eaf0ff;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  header {
+    background: #13172e;
+    border-bottom: 1px solid #2e3460;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  header h1 { font-size: 1rem; font-weight: 600; color: #c4b5fd; letter-spacing: 0.03em; text-shadow: 0 0 18px rgba(196,181,253,0.35); }
+  header .chip {
+    font-size: 0.7rem;
+    background: #242858;
+    color: #a5b4d8;
+    padding: 2px 8px;
+    border-radius: 999px;
+  }
+  .mode-link {
+    margin-left: auto;
+    font-size: 0.68rem;
+    color: #4a5280;
+    text-decoration: none;
+    padding: 3px 9px;
+    border: 1px solid #2d3148;
+    border-radius: 6px;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .mode-link:hover { color: #c4b5fd; border-color: #4f46e5; }
+
+  .workspace {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    overflow: hidden;
+  }
+
+  .panel {
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    gap: 12px;
+    overflow: hidden;
+  }
+  .panel + .panel { border-left: 1px solid #2d3148; }
+
+  .label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #6e7ec4;
+  }
+
+  textarea {
+    flex: 1;
+    background: #0e1124;
+    border: 1px solid #2a3060;
+    border-radius: 8px;
+    color: #e2e8f0;
+    font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    padding: 12px;
+    resize: none;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  textarea:focus { border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99,102,241,0.22), 0 0 16px rgba(99,102,241,0.12); }
+  textarea[readonly] { color: #c4b5fd; cursor: default; }
+  textarea::placeholder { color: #3a3f5c; }
+
+  .kbd-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .kbd-input {
+    background: #13151f;
+    border: 1px solid #2d3148;
+    border-radius: 8px;
+    color: #fbbf24;
+    font-family: 'Fira Code', 'Consolas', monospace;
+    font-size: 0.82rem;
+    padding: 8px 12px;
+    outline: none;
+    transition: border-color 0.15s;
+    width: 100%;
+  }
+  .kbd-input:focus { border-color: #fbbf24; box-shadow: 0 0 0 2px rgba(251,191,36,0.2), 0 0 12px rgba(251,191,36,0.1); }
+  .kbd-input::placeholder { color: #3a3f5c; }
+
+  .actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  button {
+    border: none;
+    border-radius: 7px;
+    cursor: pointer;
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 8px 16px;
+    transition: opacity 0.15s, transform 0.1s;
+  }
+  button:active { transform: scale(0.97); }
+  button:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+  #btn-run {
+    background: #5048e8;
+    color: #fff;
+    flex: 1;
+    box-shadow: 0 0 10px rgba(99,102,241,0.3);
+  }
+  #btn-run:hover:not(:disabled) { background: #4338ca; box-shadow: 0 0 18px rgba(99,102,241,0.55); }
+
+  #btn-clear {
+    background: #1e2235;
+    color: #94a3b8;
+    border: 1px solid #2d3148;
+  }
+  #btn-clear:hover { background: #252840; }
+
+  #btn-help {
+    background: #1e2235;
+    color: #c4b5fd;
+    border: 1px solid #2d3148;
+  }
+  #btn-help:hover { background: #252840; }
+
+  .status-box {
+    flex-shrink: 0;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    padding: 10px 14px;
+    display: none;
+    line-height: 1.5;
+  }
+  .status-box.error {
+    display: block;
+    background: #2d1515;
+    border: 1px solid #7f1d1d;
+    color: #fca5a5;
+    white-space: pre-wrap;
+    font-family: 'Fira Code', monospace;
+  }
+  .status-box.warning {
+    display: block;
+    background: #292010;
+    border: 1px solid #78350f;
+    color: #fbbf24;
+  }
+  .status-box.info {
+    display: block;
+    background: #0f1f2e;
+    border: 1px solid #1e4060;
+    color: #7dd3fc;
+  }
+
+  /* I/O port labels */
+  .io-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .port-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    padding: 2px 7px;
+    border-radius: 999px;
+  }
+  .port-badge.kbd  { background: #4a1e05; color: #fcd34d; box-shadow: 0 0 8px rgba(252,211,77,0.2); }
+  .port-badge.disp { background: #0a2a52; color: #22d3ee; box-shadow: 0 0 8px rgba(34,211,238,0.2); }
+
+  /* ── UI Improvements ─────────────────────────────── */
+
+  /* Example dropdown */
+  #example-select {
+    background: #13151f;
+    border: 1px solid #2d3148;
+    border-radius: 7px;
+    color: #94a3b8;
+    font-size: 0.78rem;
+    padding: 6px 10px;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.15s;
+    flex-shrink: 0;
+    width: 100%;
+  }
+  #example-select:focus { border-color: #4f46e5; }
+  #example-select option { background: #1a1d27; }
+
+  /* Line numbers + editor wrap */
+  .editor-wrap {
+    flex: 1;
+    display: flex;
+    min-height: 0;
+    border: 1px solid #2a3060;
+    border-radius: 8px;
+    background: #0e1124;
+    overflow: hidden;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .editor-wrap:focus-within { border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99,102,241,0.22), 0 0 16px rgba(99,102,241,0.1); }
+
+  #line-nums {
+    width: 38px;
+    background: #0d0f18;
+    border-right: 1px solid #2d3148;
+    color: #3a4060;
+    font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    padding: 12px 6px 12px 0;
+    text-align: right;
+    overflow: hidden;
+    user-select: none;
+    flex-shrink: 0;
+    white-space: pre;
+  }
+
+  /* Override border/bg for #code — the .editor-wrap owns them */
+  #code {
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    padding-left: 10px;
+    min-width: 0;
+  }
+  #code:focus { border-color: transparent; }
+
+  /* Ctrl+Enter shortcut badge */
+  .shortcut-hint {
+    font-size: 0.62rem;
+    font-weight: 400;
+    font-family: 'Fira Code', monospace;
+    background: rgba(255,255,255,0.12);
+    border-radius: 3px;
+    padding: 1px 4px;
+    margin-left: 6px;
+    opacity: 0.75;
+    vertical-align: middle;
+    pointer-events: none;
+    letter-spacing: 0;
+  }
+  #btn-run:disabled .shortcut-hint { opacity: 0.3; }
+
+  /* Copy output button */
+  #btn-copy {
+    background: #1e2235;
+    color: #94a3b8;
+    border: 1px solid #2d3148;
+    font-size: 0.75rem;
+    padding: 4px 10px;
+  }
+  #btn-copy:hover:not(:disabled) { background: #252840; color: #e2e8f0; }
+  #btn-copy.copied { background: #0f2f1a; border-color: #166534; color: #4ade80; }
+
+  /* Elapsed run time */
+  .run-time-label {
+    font-size: 0.7rem;
+    color: #4a5280;
+    font-family: 'Fira Code', monospace;
+    flex-shrink: 0;
+    align-self: flex-start;
+  }
+
+  /* Responsive: single column on narrow screens */
+  @media (max-width: 680px) {
+    body { height: auto; overflow: auto; }
+    .workspace { grid-template-columns: 1fr; overflow: visible; height: auto; }
+    .panel { min-height: 50vh; }
+    .panel + .panel { border-left: none; border-top: 1px solid #2d3148; }
+  }
+
+  /* ── Help Modal ─────────────────────────────── */
+  #modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  #modal-overlay.open { display: flex; }
+
+  #modal {
+    background: #1a1d27;
+    border: 1px solid #2d3148;
+    border-radius: 12px;
+    width: min(860px, 95vw);
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  #modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-bottom: 1px solid #2d3148;
+    flex-shrink: 0;
+  }
+  #modal-header h2 { font-size: 0.95rem; color: #c4b5fd; }
+
+  #modal-close {
+    background: none;
+    border: none;
+    color: #64748b;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+  #modal-close:hover { color: #e2e8f0; background: #252840; }
+
+  #modal-body {
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .help-section h3 {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #64748b;
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #2d3148;
+  }
+
+  .instr-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 6px;
+  }
+
+  .instr-card {
+    background: #13151f;
+    border: 1px solid #1e2235;
+    border-radius: 6px;
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .instr-card .syntax {
+    font-family: 'Fira Code', 'Consolas', monospace;
+    font-size: 0.78rem;
+    color: #c4b5fd;
+  }
+  .instr-card .desc {
+    font-size: 0.72rem;
+    color: #64748b;
+  }
+
+  .port-table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 0.78rem;
+  }
+  .port-table th {
+    text-align: left;
+    padding: 5px 10px;
+    color: #64748b;
+    font-weight: 600;
+    border-bottom: 1px solid #2d3148;
+  }
+  .port-table td {
+    padding: 5px 10px;
+    border-bottom: 1px solid #1e2235;
+  }
+  .port-table td:first-child {
+    font-family: 'Fira Code', monospace;
+    color: #c4b5fd;
+  }
+  .port-table tr:last-child td { border-bottom: none; }
+
+  .example-code {
+    background: #0d0f18;
+    border: 1px solid #2d3148;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-family: 'Fira Code', 'Consolas', monospace;
+    font-size: 0.78rem;
+    line-height: 1.7;
+    color: #e2e8f0;
+    white-space: pre;
+    overflow-x: auto;
+  }
+  .example-code .cmt { color: #4a5280; }
+  .example-code .kw  { color: #c4b5fd; }
+  .example-code .num { color: #fbbf24; }
+  .example-code .lbl { color: #34d399; }
+
+  .info-row {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    font-size: 0.78rem;
+  }
+  .info-item { color: #94a3b8; }
+  .info-item span { color: #c4b5fd; font-family: monospace; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>IAS-Overclockers CPU Simulator</h1>
+  <span class="chip">16-bit · Icarus Verilog</span>
+  <a href="/futuristic" class="mode-link">⚡ Futuristic</a>
+</header>
+
+<div class="workspace">
+  <!-- LEFT PANEL -->
+  <div class="panel">
+    <div class="label">Assembly Code</div>
+
+    <select id="example-select">
+      <option value="">— Load example… —</option>
+      <option value="hello">Hello World</option>
+      <option value="echo">Echo Keyboard</option>
+      <option value="fibonacci">Fibonacci Sequence</option>
+      <option value="counter">Counter 0–9</option>
+    </select>
+
+    <div class="editor-wrap">
+      <div id="line-nums" aria-hidden="true"></div>
+      <textarea id="code" placeholder="; Write your assembly program here
+; Example: output character 'A' to display
+MOVI 65       ; A = 65 (ASCII 'A')
+OUT 16        ; write A to display port 16
+END"></textarea>
+    </div>
+
+    <div class="kbd-row">
+      <div class="io-label">
+        <span class="label">Keyboard Input</span>
+        <span class="port-badge kbd">PORT 0</span>
+      </div>
+      <input type="text" id="kbd-input" class="kbd-input"
+             placeholder="Characters fed one-by-one to KBD_DATA after CPU reads KBD_STATUS…">
+    </div>
+
+    <div class="actions">
+      <button id="btn-run"><span id="btn-run-label">&#9654; Run</span><kbd class="shortcut-hint">Ctrl&#8629;</kbd></button>
+      <button id="btn-clear">&#10005; Clear</button>
+      <button id="btn-help">? Help</button>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="panel">
+    <div class="io-label" style="justify-content: space-between;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="label">Display Output</span>
+        <span class="port-badge disp">PORT 16</span>
+      </div>
+      <button id="btn-copy">&#128203; Copy</button>
+    </div>
+    <textarea id="display-out" readonly placeholder="Output from OUT 16 instructions appears here…"></textarea>
+    <div id="status-box" class="status-box"></div>
+    <span id="run-time" class="run-time-label"></span>
+  </div>
+</div>
+
+<!-- ── HELP MODAL ──────────────────────────── -->
+<div id="modal-overlay">
+  <div id="modal">
+    <div id="modal-header">
+      <h2>Assembly Instruction Reference</h2>
+      <button id="modal-close">&#10005;</button>
+    </div>
+    <div id="modal-body">
+
+      <div class="help-section">
+        <h3>Quick Info</h3>
+        <div class="info-row">
+          <div class="info-item">Registers: <span>A</span> (accumulator), <span>X</span>, <span>Y</span> (index), <span>SP</span> (auto)</div>
+          <div class="info-item">Immediate range: <span>−256 … +255</span> (9-bit signed)</div>
+          <div class="info-item">Memory: <span>0x000–0x3FF</span> (1024 × 16-bit words)</div>
+        </div>
+      </div>
+
+      <div class="help-section">
+        <h3>Example — Echo keyboard to display</h3>
+<div class="example-code"><span class="lbl">loop:</span>
+    <span class="kw">IN</span>   <span class="num">1</span>      <span class="cmt">; A = KBD_STATUS  (bit 0 = data ready)</span>
+    <span class="kw">ANDI</span> <span class="num">1</span>      <span class="cmt">; isolate data-ready bit</span>
+    <span class="kw">BRZ</span>  <span class="lbl">loop</span>  <span class="cmt">; no char yet → keep polling</span>
+    <span class="kw">IN</span>   <span class="num">0</span>      <span class="cmt">; A = KBD_DATA (ASCII), clears latch</span>
+    <span class="kw">OUT</span>  <span class="num">16</span>     <span class="cmt">; write A to display</span>
+    <span class="kw">BRA</span>  <span class="lbl">loop</span>  <span class="cmt">; next character</span>
+<span class="kw">END</span></div>
+      </div>
+
+      <div class="help-section">
+        <h3>I/O Ports</h3>
+        <table class="port-table">
+          <tr><th>Port</th><th>Direction</th><th>Name</th><th>Description</th></tr>
+          <tr><td>0</td><td>Read</td><td>KBD_DATA</td><td>ASCII of pressed key; reading clears latch &amp; IRQ</td></tr>
+          <tr><td>1</td><td>Read</td><td>KBD_STATUS</td><td>bit[0] = 1 when a character is waiting</td></tr>
+          <tr><td>16</td><td>Write</td><td>DISP_DATA</td><td>Write a character (low byte = ASCII) to display</td></tr>
+          <tr><td>17</td><td>Read</td><td>DISP_STATUS</td><td>Always 0 (display is always ready)</td></tr>
+          <tr><td>32</td><td>R/W</td><td>TIMER_CTRL</td><td>bit[0]=enable, bit[1]=periodic</td></tr>
+          <tr><td>33</td><td>R/W</td><td>TIMER_PERIOD</td><td>Reload value; write also resets counter</td></tr>
+          <tr><td>34</td><td>Read</td><td>TIMER_COUNT</td><td>Current counter value</td></tr>
+          <tr><td>48</td><td>R/W</td><td>IER</td><td>Interrupt Enable Register [3:0]</td></tr>
+          <tr><td>49</td><td>Read</td><td>IFR</td><td>Interrupt Flag Register [3]=mining [2]=kbd [1]=timer [0]=ext</td></tr>
+          <tr><td>64</td><td>Read</td><td>MINE_HASH</td><td>Mining hash result; reading clears mining IRQ</td></tr>
+          <tr><td>65</td><td>Read</td><td>MINE_NONCE</td><td>Mining nonce result</td></tr>
+        </table>
+      </div>
+
+      <div class="help-section">
+        <h3>Control Flow</h3>
+        <div class="instr-grid">
+          <div class="instr-card"><span class="syntax">END</span><span class="desc">Halt execution</span></div>
+          <div class="instr-card"><span class="syntax">JMP addr</span><span class="desc">Unconditional jump to address</span></div>
+          <div class="instr-card"><span class="syntax">RET</span><span class="desc">Return: pop PC from stack</span></div>
+          <div class="instr-card"><span class="syntax">BRA addr</span><span class="desc">Branch always (relative to label)</span></div>
+          <div class="instr-card"><span class="syntax">BRZ addr</span><span class="desc">Branch if A = 0 (Zero flag)</span></div>
+          <div class="instr-card"><span class="syntax">BRN addr</span><span class="desc">Branch if A &lt; 0 (Negative flag)</span></div>
+          <div class="instr-card"><span class="syntax">BRC addr</span><span class="desc">Branch if Carry flag set</span></div>
+          <div class="instr-card"><span class="syntax">BRO addr</span><span class="desc">Branch if Overflow flag set</span></div>
+          <div class="instr-card"><span class="syntax">BGT addr</span><span class="desc">Branch if A &gt; operand (signed)</span></div>
+          <div class="instr-card"><span class="syntax">BLT addr</span><span class="desc">Branch if A &lt; operand (signed)</span></div>
+          <div class="instr-card"><span class="syntax">BGE addr</span><span class="desc">Branch if A ≥ operand (signed)</span></div>
+          <div class="instr-card"><span class="syntax">BLE addr</span><span class="desc">Branch if A ≤ operand (signed)</span></div>
+          <div class="instr-card"><span class="syntax">BEQ addr</span><span class="desc">Branch if equal (A = 0 after CMP)</span></div>
+          <div class="instr-card"><span class="syntax">BNE addr</span><span class="desc">Branch if not equal</span></div>
+        </div>
+      </div>
+
+      <div class="help-section">
+        <h3>Memory Access</h3>
+        <div class="instr-grid">
+          <div class="instr-card"><span class="syntax">LD X, addr</span><span class="desc">X = mem[addr]</span></div>
+          <div class="instr-card"><span class="syntax">LD Y, addr</span><span class="desc">Y = mem[addr]</span></div>
+          <div class="instr-card"><span class="syntax">ST X, addr</span><span class="desc">mem[addr] = X</span></div>
+          <div class="instr-card"><span class="syntax">ST Y, addr</span><span class="desc">mem[addr] = Y</span></div>
+          <div class="instr-card"><span class="syntax">PUSH X</span><span class="desc">Push X onto stack; SP--</span></div>
+          <div class="instr-card"><span class="syntax">PUSH Y</span><span class="desc">Push Y onto stack; SP--</span></div>
+          <div class="instr-card"><span class="syntax">POP X</span><span class="desc">Pop top of stack into X; SP++</span></div>
+          <div class="instr-card"><span class="syntax">POP Y</span><span class="desc">Pop top of stack into Y; SP++</span></div>
+        </div>
+      </div>
+
+      <div class="help-section">
+        <h3>Move / Load Immediate</h3>
+        <div class="instr-grid">
+          <div class="instr-card"><span class="syntax">MOVI imm</span><span class="desc">A = sign-extended 9-bit immediate</span></div>
+          <div class="instr-card"><span class="syntax">MOV X, imm</span><span class="desc">X = immediate value</span></div>
+          <div class="instr-card"><span class="syntax">MOV Y, imm</span><span class="desc">Y = immediate value</span></div>
+          <div class="instr-card"><span class="syntax">MOVR A, X</span><span class="desc">A = X</span></div>
+          <div class="instr-card"><span class="syntax">MOVR A, Y</span><span class="desc">A = Y</span></div>
+          <div class="instr-card"><span class="syntax">MOVR X, A</span><span class="desc">X = A</span></div>
+          <div class="instr-card"><span class="syntax">MOVR Y, A</span><span class="desc">Y = A</span></div>
+          <div class="instr-card"><span class="syntax">MOVR X, Y</span><span class="desc">X = Y</span></div>
+          <div class="instr-card"><span class="syntax">MOVR Y, X</span><span class="desc">Y = X</span></div>
+        </div>
+      </div>
+
+      <div class="help-section">
+        <h3>Arithmetic</h3>
+        <div class="instr-grid">
+          <div class="instr-card"><span class="syntax">ADD X / ADD Y</span><span class="desc">A = A + X (or Y)</span></div>
+          <div class="instr-card"><span class="syntax">SUB X / SUB Y</span><span class="desc">A = A − X (or Y)</span></div>
+          <div class="instr-card"><span class="syntax">MUL X / MUL Y</span><span class="desc">A = A × X (or Y)</span></div>
+          <div class="instr-card"><span class="syntax">DIV X / DIV Y</span><span class="desc">A = A ÷ X (or Y)</span></div>
+          <div class="instr-card"><span class="syntax">MOD X / MOD Y</span><span class="desc">A = A mod X (or Y)</span></div>
+          <div class="instr-card"><span class="syntax">ADDI imm</span><span class="desc">A = A + immediate</span></div>
+          <div class="instr-card"><span class="syntax">SUBI imm</span><span class="desc">A = A − immediate</span></div>
+          <div class="instr-card"><span class="syntax">MULI imm</span><span class="desc">A = A × immediate</span></div>
+          <div class="instr-card"><span class="syntax">DIVI imm</span><span class="desc">A = A ÷ immediate</span></div>
+          <div class="instr-card"><span class="syntax">MODI imm</span><span class="desc">A = A mod immediate</span></div>
+          <div class="instr-card"><span class="syntax">INC X / INC Y</span><span class="desc">X++ or Y++ (does not affect A)</span></div>
+          <div class="instr-card"><span class="syntax">DEC X / DEC Y</span><span class="desc">X-- or Y-- (does not affect A)</span></div>
+        </div>
+      </div>
+
+      <div class="help-section">
+        <h3>Shift &amp; Rotate</h3>
+        <div class="instr-grid">
+          <div class="instr-card"><span class="syntax">LSL X / LSL Y</span><span class="desc">A &lt;&lt;= X (logical shift left)</span></div>
+          <div class="instr-card"><span class="syntax">LSR X / LSR Y</span><span class="desc">A &gt;&gt;= X (logical shift right)</span></div>
+          <div class="instr-card"><span class="syntax">RSL X / RSL Y</span><span class="desc">A &lt;&lt;= X (rotate left)</span></div>
+          <div class="instr-card"><span class="syntax">RSR X / RSR Y</span><span class="desc">A &gt;&gt;= X (rotate right)</span></div>
+          <div class="instr-card"><span class="syntax">LSLI imm</span><span class="desc">A &lt;&lt;= imm (logical shift left)</span></div>
+          <div class="instr-card"><span class="syntax">LSRI imm</span><span class="desc">A &gt;&gt;= imm (logical shift right)</span></div>
+          <div class="instr-card"><span class="syntax">RSLI imm</span><span class="desc">A &lt;&lt;= imm (rotate left)</span></div>
+          <div class="instr-card"><span class="syntax">RSRI imm</span><span class="desc">A &gt;&gt;= imm (rotate right)</span></div>
+        </div>
+      </div>
+
+      <div class="help-section">
+        <h3>Logical</h3>
+        <div class="instr-grid">
+          <div class="instr-card"><span class="syntax">AND X / AND Y</span><span class="desc">A = A &amp; X (or Y)</span></div>
+          <div class="instr-card"><span class="syntax">OR X / OR Y</span><span class="desc">A = A | X (or Y)</span></div>
+          <div class="instr-card"><span class="syntax">XOR X / XOR Y</span><span class="desc">A = A ^ X (or Y)</span></div>
+          <div class="instr-card"><span class="syntax">NOT X / NOT Y</span><span class="desc">A = ~X (or ~Y)</span></div>
+          <div class="instr-card"><span class="syntax">ANDI imm</span><span class="desc">A = A &amp; immediate</span></div>
+          <div class="instr-card"><span class="syntax">ORI imm</span><span class="desc">A = A | immediate</span></div>
+          <div class="instr-card"><span class="syntax">XORI imm</span><span class="desc">A = A ^ immediate</span></div>
+          <div class="instr-card"><span class="syntax">NOTI imm</span><span class="desc">A = ~immediate</span></div>
+        </div>
+      </div>
+
+      <div class="help-section">
+        <h3>Compare &amp; Test</h3>
+        <div class="instr-grid">
+          <div class="instr-card"><span class="syntax">CMP X / CMP Y</span><span class="desc">Set flags from A − X (discard result)</span></div>
+          <div class="instr-card"><span class="syntax">TST X / TST Y</span><span class="desc">Set flags from A &amp; X (discard result)</span></div>
+          <div class="instr-card"><span class="syntax">CMPI imm</span><span class="desc">Set flags from A − immediate</span></div>
+          <div class="instr-card"><span class="syntax">TSTI imm</span><span class="desc">Set flags from A &amp; immediate</span></div>
+        </div>
+      </div>
+
+      <div class="help-section">
+        <h3>I/O</h3>
+        <div class="instr-grid">
+          <div class="instr-card"><span class="syntax">IN port</span><span class="desc">A = I/O port value (10-bit port address)</span></div>
+          <div class="instr-card"><span class="syntax">OUT port</span><span class="desc">I/O port = A (10-bit port address)</span></div>
+        </div>
+      </div>
+
+      <div class="help-section">
+        <h3>Interrupts</h3>
+        <div class="instr-grid">
+          <div class="instr-card"><span class="syntax">EI</span><span class="desc">Enable interrupts (set I flag)</span></div>
+          <div class="instr-card"><span class="syntax">DI</span><span class="desc">Disable interrupts (clear I flag)</span></div>
+          <div class="instr-card"><span class="syntax">IRET</span><span class="desc">Return from interrupt: pop PC &amp; FLAGS, re-enable</span></div>
+          <div class="instr-card"><span class="syntax">WAIT</span><span class="desc">Halt CPU until an interrupt fires</span></div>
+        </div>
+      </div>
+
+      <div class="help-section">
+        <h3>Accelerator</h3>
+        <div class="instr-grid">
+          <div class="instr-card"><span class="syntax">MINE</span><span class="desc">Start SHA-256 mining (X=data, Y=nonce, A=target); result in ports 64–65</span></div>
+        </div>
+      </div>
+
+    </div><!-- modal-body -->
+  </div><!-- modal -->
+</div><!-- modal-overlay -->
+
+<script>
+(function () {
+  // ── Element references ────────────────────────────────
+  const codeEl      = document.getElementById('code');
+  const kbdEl       = document.getElementById('kbd-input');
+  const dispEl      = document.getElementById('display-out');
+  const statusEl    = document.getElementById('status-box');
+  const btnRun      = document.getElementById('btn-run');
+  const btnRunLabel = document.getElementById('btn-run-label');
+  const btnClear    = document.getElementById('btn-clear');
+  const btnHelp     = document.getElementById('btn-help');
+  const btnCopy     = document.getElementById('btn-copy');
+  const overlay     = document.getElementById('modal-overlay');
+  const modalClose  = document.getElementById('modal-close');
+  const lineNumsEl  = document.getElementById('line-nums');
+  const exampleSel  = document.getElementById('example-select');
+  const runTimeEl   = document.getElementById('run-time');
+
+  // ── localStorage persistence ──────────────────────────
+  const STORAGE_KEY = 'ias_overclockers_code';
+  function saveToStorage() { try { localStorage.setItem(STORAGE_KEY, codeEl.value); } catch(_){} }
+  function loadFromStorage() { try { const s = localStorage.getItem(STORAGE_KEY); if (s !== null) codeEl.value = s; } catch(_){} }
+  loadFromStorage();
+
+  // ── Line numbers ──────────────────────────────────────
+  function updateLineNums() {
+    const n = codeEl.value.split('\n').length;
+    if (+lineNumsEl.dataset.lines === n) return;
+    lineNumsEl.dataset.lines = n;
+    lineNumsEl.textContent = Array.from({length: n}, (_, i) => i + 1).join('\n');
+  }
+  function syncLineScroll() { lineNumsEl.scrollTop = codeEl.scrollTop; }
+  codeEl.addEventListener('input',  () => { updateLineNums(); syncLineScroll(); saveToStorage(); });
+  codeEl.addEventListener('scroll', syncLineScroll);
+  updateLineNums();
+
+  // ── Example programs ──────────────────────────────────
+  const EXAMPLES = {
+    hello:
+`; Hello World — outputs "Hello" to display
+MOVI 72       ; 'H'
+OUT 16
+MOVI 101      ; 'e'
+OUT 16
+MOVI 108      ; 'l'
+OUT 16
+MOVI 108      ; 'l'
+OUT 16
+MOVI 111      ; 'o'
+OUT 16
+END`,
+
+    echo:
+`; Echo Keyboard — reads keys and mirrors to display
+loop:
+    IN   1      ; A = KBD_STATUS
+    ANDI 1      ; isolate data-ready bit
+    BRZ  loop   ; no char yet
+    IN   0      ; A = KBD_DATA (clears latch)
+    OUT  16     ; write to display
+    BRA  loop   ; next character
+END`,
+
+    fibonacci:
+`; Fibonacci — prints single-digit fib values (0,1,1,2,3,5,8)
+; X = prev, Y = curr; stops when value > 9
+MOV X, 0
+MOV Y, 1
+fib_loop:
+    MOVR A, X
+    CMPI 9
+    BGT  fib_done
+    ADDI 48       ; convert to ASCII digit
+    OUT  16
+    MOVI 10
+    OUT  16       ; newline
+    MOVR A, Y
+    ADD  X
+    MOVR X, Y
+    MOVR Y, A
+    BRA  fib_loop
+fib_done:
+END`,
+
+    counter:
+`; Counter 0-9 — outputs each digit
+MOV X, 0
+count_loop:
+    MOVR A, X
+    ADDI 48       ; ASCII '0'
+    OUT  16
+    INC  X
+    MOVR A, X
+    CMPI 10
+    BLT  count_loop
+END`
+  };
+
+  exampleSel.addEventListener('change', () => {
+    const key = exampleSel.value;
+    if (!key) return;
+    codeEl.value = EXAMPLES[key];
+    exampleSel.value = '';
+    updateLineNums();
+    saveToStorage();
+    codeEl.focus();
+  });
+
+  // ── Help modal ────────────────────────────────────────
+  btnHelp.addEventListener('click', () => overlay.classList.add('open'));
+  modalClose.addEventListener('click', () => overlay.classList.remove('open'));
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') overlay.classList.remove('open'); });
+
+  // ── Clear ─────────────────────────────────────────────
+  btnClear.addEventListener('click', () => {
+    codeEl.value  = '';
+    kbdEl.value   = '';
+    dispEl.value  = '';
+    runTimeEl.textContent = '';
+    updateLineNums();
+    setStatus('', '');
+    saveToStorage();
+  });
+
+  // ── Status helper ─────────────────────────────────────
+  function setStatus(type, msg) {
+    statusEl.className = 'status-box' + (type ? ' ' + type : '');
+    statusEl.textContent = msg;
+  }
+
+  // ── Copy output to clipboard ──────────────────────────
+  btnCopy.addEventListener('click', async () => {
+    const text = dispEl.value;
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (_) {
+      dispEl.select();
+      document.execCommand('copy');
+      dispEl.setSelectionRange(0, 0);
+    }
+    btnCopy.classList.add('copied');
+    btnCopy.textContent = '✓ Copied';
+    setTimeout(() => {
+      btnCopy.classList.remove('copied');
+      btnCopy.innerHTML = '&#128203; Copy';
+    }, 1500);
+  });
+
+  // ── Animate display output char by char ───────────────
+  function animateDisplay(text) {
+    dispEl.value = '';
+    btnCopy.disabled = true;
+    if (!text) { btnCopy.disabled = false; return; }
+    let i = 0;
+    function step() {
+      if (i >= text.length) { btnCopy.disabled = false; return; }
+      dispEl.value += text[i++];
+      dispEl.scrollTop = dispEl.scrollHeight;
+      setTimeout(step, 40);
+    }
+    step();
+  }
+
+  // ── Run ───────────────────────────────────────────────
+  btnRun.addEventListener('click', async () => {
+    const code = codeEl.value.trim();
+    if (!code) { setStatus('error', 'No assembly code to run.'); return; }
+
+    btnRun.disabled = true;
+    btnRunLabel.textContent = '⏳ Running…';
+    dispEl.value = '';
+    runTimeEl.textContent = '';
+    setStatus('info', 'Assembling and simulating…');
+
+    const t0 = performance.now();
+
+    try {
+      const res = await fetch('/api/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, kbd_input: kbdEl.value }),
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        setStatus('error', data.errors.join('\n'));
+        runTimeEl.textContent = '';
+        return;
+      }
+
+      if (data.errors && data.errors.length > 0) {
+        setStatus('warning', data.errors.join('\n'));
+      } else {
+        setStatus('', '');
+      }
+
+      const elapsed = ((performance.now() - t0) / 1000).toFixed(2);
+      runTimeEl.textContent = `Ran in ${elapsed}s`;
+
+      animateDisplay(data.display_output || '');
+
+    } catch (err) {
+      setStatus('error', 'Network error: ' + err.message);
+      runTimeEl.textContent = '';
+    } finally {
+      btnRun.disabled = false;
+      btnRunLabel.textContent = '▶ Run';
+    }
+  });
+
+  // ── Keyboard shortcuts ────────────────────────────────
+  codeEl.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { btnRun.click(); return; }
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const s = codeEl.selectionStart, end = codeEl.selectionEnd;
+      codeEl.value = codeEl.value.slice(0, s) + '  ' + codeEl.value.slice(end);
+      codeEl.selectionStart = codeEl.selectionEnd = s + 2;
+      updateLineNums();
+      saveToStorage();
+    }
+  });
+})();
+</script>
+</body>
+</html>

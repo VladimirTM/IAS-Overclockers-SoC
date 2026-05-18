@@ -408,6 +408,9 @@ module mining_core (
                     if (hash_out < target) begin
                         result_nonce <= current_nonce;
                         done <= 1;
+                    end else if (current_nonce == 16'hFFFF) begin
+                        // nonce space exhausted — signal done with no result
+                        done <= 1;
                     end else begin
                         current_nonce <= nonce_inc[15:0];
                     end
@@ -441,6 +444,8 @@ module mining_core (
 
             CHECK: begin
                 if (hash_out < target)
+                    next_state = DONE_STATE;
+                else if (current_nonce == 16'hFFFF)
                     next_state = DONE_STATE;
                 else
                     next_state = INIT;

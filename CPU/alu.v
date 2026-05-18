@@ -185,6 +185,7 @@ module ALU (
     // Multiplication counter
     count #(.w(3)) CNT1 (
         .clk(clk),
+        .rst_n(rst_b),
         .clr(m0 | d0),
         .incr(m6 | d12),
         .q(CNTM)
@@ -195,6 +196,7 @@ module ALU (
     // Division counter
     count #(.w(4)) CNT2 (
         .clk(clk),
+        .rst_n(rst_b),
         .clr(d0),
         .incr(d2),
         .decr(d15),

@@ -92,7 +92,7 @@ module input_sequencer (
                 sequencing_done <= 1'b1;
             end
             else if (state == DONE) begin
-                core_start <= 1'b1;
+                core_start <= 1'b0;
                 sequencing_done <= 1'b1;
             end
             else if (state == WAIT && !start) begin

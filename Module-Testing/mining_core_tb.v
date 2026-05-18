@@ -70,7 +70,7 @@ initial begin
     target = 16'hFFFF;
     @(negedge clk); start = 0;
 
-    @(posedge done);
+    while (!done) @(posedge clk);
     @ (negedge clk);
     check_mining("Target=0xFFFF (immediate)", 16'hFFFF);
 
@@ -82,7 +82,7 @@ initial begin
     target = 16'h4000;
     @(negedge clk); start = 0;
 
-    @(posedge done);
+    while (!done) @(posedge clk);
     @ (negedge clk);
     check_mining("Target=0x4000 (medium)", 16'h4000);
 
@@ -94,7 +94,7 @@ initial begin
     target = 16'h7FFF;
     @(negedge clk); start = 0;
 
-    @(posedge done);
+    while (!done) @(posedge clk);
     @ (negedge clk);
     check_mining("Nonce start=0x00FF", 16'h7FFF);
 

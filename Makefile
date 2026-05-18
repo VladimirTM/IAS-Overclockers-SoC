@@ -188,7 +188,7 @@ test-all:
 clean:
 	@echo "Cleaning generated files..."
 	@rm -f cpu_tb_sim memory_tb_sim a_tb_sim x_tb_sim y_tb_sim dr_tb_sim
-	@rm -f *_tb_sim cpu_all_instructions_tb.vcd
+	@rm -f *_tb_sim
 	@rm -f data_bin_temp.txt
 	@rm -f *.vcd
 	@echo "✓ Clean complete"

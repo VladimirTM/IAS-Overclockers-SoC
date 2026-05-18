@@ -7,7 +7,7 @@ echo "========================================="
 echo ""
 
 echo "Compiling ALU modules and testbench..."
-iverilog -o alu_test alu_tb.v ../ALU/ALU.v ../ALU/controlUnit.v ../ALU/input_sequencer.v ../ALU/opcode_decoder.v ../ALU/logic_unit.v ../ALU/barrel_shifter.v ../ALU/flag_generator.v ../ALU/rcas.v ../ALU/rca.v ../ALU/mux.v ../ALU/fac.v ../ALU/rgst.v ../ALU/count.v ../ALU/SRT4_PLA.v
+iverilog -o alu_test alu_tb.v ../CPU/alu.v ../CPU/controlUnit.v ../CPU/input_sequencer.v ../CPU/opcode_decoder.v ../CPU/logic_unit.v ../CPU/barrel_shifter.v ../CPU/flag_generator.v ../CPU/rcas.v ../CPU/rca.v ../CPU/mux.v ../CPU/fac.v ../CPU/rgst.v ../CPU/count.v ../CPU/SRT4_PLA.v
 
 if [ $? -eq 0 ]; then
     echo "Compilation successful!"

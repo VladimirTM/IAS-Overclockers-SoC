@@ -38,7 +38,7 @@ for tb_file in *_tb.v; do
     # 2. COMPILE:
     # We redirect stderr to stdout (2>&1) and use grep -v to hide lines with "warning".
     # We capture the exit code of iverilog specifically using PIPESTATUS.
-    iverilog -o "${base_name}.out" "$tb_file" "$DESIGN_DIR"/*.v 2>&1 | grep -v "warning"
+    iverilog -o "${base_name}.out" "$tb_file" "$DESIGN_DIR"/*.v 2>&1 | grep -Ev "^[^:]+:[0-9]+: warning:"
 
     # Capture the exit code of the FIRST command in the pipe (iverilog), not grep.
     compile_status=${PIPESTATUS[0]}

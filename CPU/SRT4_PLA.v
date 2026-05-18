@@ -1,3 +1,6 @@
+// Boundary overlaps are intentional: SRT4 redundant number system allows
+// either quotient digit at selection boundaries. First-wins in if-else
+// consistently picks the lower-magnitude digit, which is the standard choice.
 module SRT4_PLA (
     input signed [5:0] P,
     input [3:0] b,

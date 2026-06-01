@@ -1,4 +1,5 @@
 import os
+import re
 import subprocess
 import threading
 import glob
@@ -97,11 +98,21 @@ def _run_simulation(code, kbd_input):
         )
         output = sim_result.stdout.decode('utf-8', errors='replace')
 
-        # Parse display characters
+        # Parse display characters and register state
         display_chars = []
+        registers = {}
         for line in output.splitlines():
             if line.startswith("DISP:"):
                 display_chars.append(line[5:])
+            else:
+                m = re.match(r'^(PC|X|Y|A|SP)\s*=\s*([0-9a-fA-F]+)', line.strip())
+                if m:
+                    registers[m.group(1)] = int(m.group(2), 16)
+                else:
+                    mf = re.match(r'^Flags:\s*Z=(\d)\s+N=(\d)\s+C=(\d)\s+O=(\d)', line.strip())
+                    if mf:
+                        registers['flags'] = {'Z': int(mf.group(1)), 'N': int(mf.group(2)),
+                                              'C': int(mf.group(3)), 'O': int(mf.group(4))}
         display_output = "".join(display_chars)
 
         timed_out = "SIM_TIMEOUT" in output
@@ -110,6 +121,7 @@ def _run_simulation(code, kbd_input):
             "success": True,
             "errors": ["Simulation timed out — possible infinite loop."] if timed_out else [],
             "display_output": display_output,
+            "registers": registers,
             "timed_out": timed_out,
         })
 

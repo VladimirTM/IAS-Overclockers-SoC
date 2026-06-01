@@ -9,3 +9,4 @@ __pycache__/
 # Assembler intermediate output
 CPU-Assembler/output*.txt
 data_bin_temp.txt
+data_bin.txt

@@ -101,6 +101,12 @@ module web_io_tb;
     // Hard timeout: 5 ms (500 000 cycles at 100 MHz)
     initial begin
         #5000000;
+        $display("PC = %h", pc_out);
+        $display("X  = %h", X_out);
+        $display("Y  = %h", Y_out);
+        $display("A  = %h", A_out);
+        $display("SP = %h", dut.sp_out);
+        $display("Flags: Z=%b N=%b C=%b O=%b", dut.Z_flag, dut.N_flag, dut.C_flag, dut.O_flag);
         $display("SIM_TIMEOUT");
         $finish;
     end

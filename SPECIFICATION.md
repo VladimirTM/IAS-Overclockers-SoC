@@ -110,8 +110,8 @@ ALU este o unitate multi-cycle cu 13 tipuri de operații:
 | BLT | 011111 | adresă 10 biți | Branch dacă N≠O |
 | BGE | 100000 | adresă 10 biți | Branch dacă N=O |
 | BLE | 100001 | adresă 10 biți | Branch dacă Z ∨ (N≠O) |
-| PUSH (CALL) | 100011 | X/Y (bit registru) | Push PC, încarcă noul PC din X/Y |
-| POP / RET | 001001 | — | Pop PC din stack |
+| JMP (CALL) | 001000 | adresă 10 biți | Push PC pe stack, salt la adresă (apel subrutină) |
+| RET | 001001 | — | Pop PC din stack (revenire din subrutină) |
 | WAIT | 111011 | — | Idle până la interrupt |
 
 ### 3.2 Operații cu memoria — 8 instrucțiuni
@@ -714,10 +714,25 @@ FLAGS sunt salvate în nibble-ul superior al cuvântului din stack:
 
 ### 8.3 Programe demo
 
+Simulatorul oferă butoanele **Run**, **Stop**, **Clear**, **Registers** și **Help**. După o rulare reușită, butonul **Registers** devine activ și deschide un popup cu starea finală a tuturor registrelor CPU (A, X, Y, SP, PC) în hex, zecimal și binar, împreună cu flag-urile Z/N/C/O.
+
+Exemplele disponibile în simulatorul browser acoperă toate elementele centrale ale CPU-ului:
+
+| Exemplu (web UI) | Elemente demonstrate |
+|---|---|
+| Hello World | `MOVI`, `OUT` — încărcare imediată, port display |
+| Arithmetic | `SUB X`, `MUL X`, `MOVR Y/A`, `DIVI`, `MODI` — operații ALU aritmetice |
+| Logic & Shifts | `LSRI`, `ANDI`, `ORI`, `XORI`, `MOVR Y/A` — operații logice și deplasări |
+| Memory & Stack | `LD X`, `ST X`, `INC X`, `PUSH X`, `POP X` — RAM + stivă |
+| Subroutine | `JMP`, `RET`, `PUSH X`, `POP X` — apel/întoarcere + salvare registre |
+| Keyboard Echo | `IN 0/1`, `ANDI`, `BRZ`, `BRA` — polling tastatură prin I/O |
+| Timer Interrupt | `EI`, `WAIT`, `IRET`, `OUT 32/33/48`, IVT setup, `CMPI`, `BGE` — sistemul complet de întreruperi |
+| SHA-256 Mining | `MINE`, `CMPI`, `BLT` — acceleratorul hardware ASIP |
+
 | Fișier | Demonstrează |
 |---|---|
-| io_interrupt_demo.asm | Interrupt-uri TIMER + KBD, WAIT, ISR cu IN/OUT |
-| program1–5.asm | Aritmetică, branch-uri, bucle, operații registre, validare mixtă |
+| Demo-Programs/io_interrupt_demo.asm | Interrupt-uri TIMER + KBD, WAIT, ISR cu IN/OUT |
+| Demo-Programs/program1–5.asm | Aritmetică, branch-uri, bucle, operații registre, validare mixtă |
 
 ---
 

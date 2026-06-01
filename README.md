@@ -489,6 +489,21 @@ python3 server.py
 
 Write assembly code in the editor, optionally provide keyboard input, and click **Run** to execute the simulation and see display output. The server compiles `web_io_tb.v` on each request and streams `DISP:` output back to the browser.
 
+After a successful run, the **Registers** button becomes active. Clicking it opens a popup showing the final state of all CPU registers (A, X, Y, SP, PC) in hex, decimal, and binary, plus the Z/N/C/O flags — useful for inspecting results that aren't easily expressed as display characters (e.g. the winning nonce from the SHA-256 miner).
+
+Eight built-in examples cover all CPU core elements:
+
+| Example | Elements demonstrated |
+|---|---|
+| Hello World | `MOVI`, `OUT` — immediate loads, display port |
+| Arithmetic | `SUB X`, `MUL X`, `MOVR Y/A`, `DIVI`, `MODI` — ALU arithmetic |
+| Logic & Shifts | `LSRI`, `ANDI`, `ORI`, `XORI`, `MOVR Y/A` — bitwise ops and shifts |
+| Memory & Stack | `LD X`, `ST X`, `INC X`, `PUSH X`, `POP X` — RAM and stack |
+| Subroutine | `JMP`, `RET`, `PUSH X`, `POP X` — call/return with register preservation |
+| Keyboard Echo | `IN 0/1`, `ANDI`, `BRZ`, `BRA` — keyboard I/O polling |
+| Timer Interrupt | `EI`, `WAIT`, `IRET`, `OUT 32/33/48`, IVT setup, `CMPI`, `BGE` — full interrupt system |
+| SHA-256 Mining | `MINE`, `CMPI`, `BLT` — hardware ASIP accelerator |
+
 An alternate cyberpunk-themed UI is available at `http://localhost:5000/futuristic`.
 
 ---
@@ -688,12 +703,12 @@ IAS-Overclockers/
 ├── data_bin.txt                  # Generated machine code + initialized memory
 │
 ├── Demo-Programs/                    # Example assembly programs
-│   ├── io_interrupt_demo.asm        # I/O and interrupt system demonstration
-│   ├── program1.asm                 # Example program 1
-│   ├── program2.asm                 # Example program 2
-│   ├── program3.asm                 # Example program 3
-│   ├── program4.asm                 # Example program 4
-│   └── program5.asm                 # Example program 5
+│   ├── io_interrupt_demo.asm        # I/O and interrupt system demonstration (TIMER + KBD ISRs)
+│   ├── program1.asm                 # Arithmetic and register operations
+│   ├── program2.asm                 # Branches and control flow
+│   ├── program3.asm                 # Memory load/store and loops
+│   ├── program4.asm                 # Stack and subroutine patterns
+│   └── program5.asm                 # Mixed validation program
 │
 ├── server.py                         # Flask web server for browser-based simulation
 ├── web/                              # Web frontend

@@ -1,0 +1,1111 @@
+<!doctype html>
+<html lang="ro">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>IAS-Overclockers — Prezentare</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap"
+    />
+    <style>
+      /* ─── Reset reveal defaults ─────────────────────────────────────────── */
+      .reveal-viewport {
+        background: #0c1028;
+      }
+
+      .reveal {
+        font-family: "Segoe UI", Arial, sans-serif;
+        font-size: 32px;
+        color: #e2e8f0;
+      }
+
+      .reveal .slides section {
+        text-align: left;
+        top: 0 !important;
+        height: 100%;
+        box-sizing: border-box;
+        padding: 20px 40px;
+      }
+
+      /* ─── Headings ───────────────────────────────────────────────────────── */
+      .reveal h1,
+      .reveal h2,
+      .reveal h3,
+      .reveal h4 {
+        font-family: "Segoe UI", Arial, sans-serif;
+        text-transform: none;
+        letter-spacing: 0;
+        margin: 0 0 12px 0;
+        line-height: 1.2;
+      }
+
+      .reveal h1 {
+        font-size: 1.6em;
+        color: #c4b5fd;
+        font-weight: 800;
+      }
+      .reveal h2 {
+        font-size: 1.1em;
+        color: #38bdf8;
+        font-weight: 700;
+        border-bottom: 1px solid #1e3a5f;
+        padding-bottom: 6px;
+        margin-bottom: 14px;
+      }
+      .reveal h3 {
+        font-size: 0.72em;
+        color: #c4b5fd;
+        font-weight: 600;
+        margin: 10px 0 4px;
+      }
+
+      /* ─── Text ───────────────────────────────────────────────────────────── */
+      .reveal p {
+        font-size: 0.72em;
+        margin: 6px 0;
+        line-height: 1.5;
+      }
+      .reveal ul,
+      .reveal ol {
+        margin: 0 0 0 1.2em;
+        padding: 0;
+      }
+      .reveal li {
+        font-size: 0.68em;
+        margin: 5px 0;
+        line-height: 1.4;
+      }
+      .reveal strong {
+        color: #c4b5fd;
+      }
+      .reveal em {
+        color: #38bdf8;
+        font-style: normal;
+      }
+      .reveal code {
+        font-family: "Courier New", monospace;
+        font-size: 0.85em;
+        color: #38bdf8;
+        background: rgba(56, 189, 248, 0.1);
+        padding: 1px 4px;
+        border-radius: 3px;
+      }
+
+      /* ─── Pre / Code blocks ──────────────────────────────────────────────── */
+      .reveal pre {
+        margin: 8px 0;
+        box-shadow: none;
+        border-radius: 6px;
+        background: #0f1729;
+        padding: 10px 14px;
+        font-family: "JetBrains Mono", "Cascadia Code", "Fira Code", "Consolas", "Courier New", monospace;
+        font-size: 0.55em;
+        line-height: 1.5;
+        width: 100%;
+        box-sizing: border-box;
+        overflow: hidden;
+        white-space: pre;
+      }
+      .reveal pre code {
+        background: none;
+        color: #e2e8f0;
+        padding: 0;
+        font-size: 1em;
+        font-family: inherit;
+      }
+
+      /* ─── Tables ─────────────────────────────────────────────────────────── */
+      .reveal table {
+        font-size: 0.58em;
+        border-collapse: collapse;
+        width: 100%;
+        margin: 6px 0;
+      }
+      .reveal table th {
+        background: #1e3a5f;
+        color: #38bdf8;
+        padding: 5px 10px;
+        font-weight: 600;
+        text-align: left;
+        border: none;
+      }
+      .reveal table td {
+        padding: 4px 10px;
+        border-bottom: 1px solid #1a2540;
+        color: #e2e8f0;
+      }
+      .reveal table tr:nth-child(even) td {
+        background: rgba(255, 255, 255, 0.02);
+      }
+      .reveal table tr.hl td {
+        background: rgba(196, 181, 253, 0.12);
+      }
+
+      /* ─── Utility colors ─────────────────────────────────────────────────── */
+      .yes {
+        color: #4ade80;
+        font-weight: 700;
+      }
+      .no {
+        color: #f87171;
+      }
+      .dim {
+        color: #64748b;
+      }
+      .acc {
+        color: #c4b5fd;
+        font-weight: 600;
+      }
+      .cyn {
+        color: #38bdf8;
+        font-weight: 600;
+      }
+      .org {
+        color: #fb923c;
+      }
+
+      /* ─── Tag chip ───────────────────────────────────────────────────────── */
+      .tag {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 999px;
+        font-size: 0.52em;
+        font-family: monospace;
+        font-weight: 700;
+        margin: 2px 2px;
+        border: 1px solid;
+      }
+      .tag-p {
+        background: rgba(196, 181, 253, 0.15);
+        color: #c4b5fd;
+        border-color: rgba(196, 181, 253, 0.3);
+      }
+      .tag-c {
+        background: rgba(56, 189, 248, 0.15);
+        color: #38bdf8;
+        border-color: rgba(56, 189, 248, 0.3);
+      }
+      .tag-g {
+        background: rgba(74, 222, 128, 0.15);
+        color: #4ade80;
+        border-color: rgba(74, 222, 128, 0.3);
+      }
+      .tag-o {
+        background: rgba(251, 146, 60, 0.15);
+        color: #fb923c;
+        border-color: rgba(251, 146, 60, 0.3);
+      }
+
+      /* ─── Two-column grid ────────────────────────────────────────────────── */
+      .two-col {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-top: 8px;
+      }
+      .two-col-wide {
+        grid-template-columns: 1.3fr 1fr;
+      }
+
+      /* ─── Box ────────────────────────────────────────────────────────────── */
+      .box {
+        background: #0f1729;
+        border: 1px solid #1e3a5f;
+        border-radius: 6px;
+        padding: 10px 14px;
+      }
+      .box-acc {
+        border-color: rgba(196, 181, 253, 0.5);
+        background: rgba(196, 181, 253, 0.05);
+      }
+      .box-grn {
+        border-color: rgba(74, 222, 128, 0.4);
+        background: rgba(74, 222, 128, 0.05);
+      }
+
+      /* ─── Stat row ───────────────────────────────────────────────────────── */
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin: 18px 0;
+      }
+      .stat {
+        background: #0f1729;
+        border: 1px solid #1e3a5f;
+        border-radius: 8px;
+        padding: 12px 8px;
+        text-align: center;
+      }
+      .stat .n {
+        font-size: 1.6em;
+        font-weight: 900;
+        color: #c4b5fd;
+        font-family: monospace;
+        line-height: 1;
+      }
+      .stat .l {
+        font-size: 0.42em;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-top: 4px;
+      }
+
+      /* ─── Flow row ───────────────────────────────────────────────────────── */
+      .flow {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin: 10px 0;
+      }
+      .fb {
+        background: #0f1729;
+        border: 1px solid #1e3a5f;
+        border-radius: 4px;
+        padding: 4px 10px;
+        font-family: monospace;
+        font-size: 0.52em;
+        white-space: nowrap;
+      }
+      .fb-c {
+        border-color: #38bdf8;
+        color: #38bdf8;
+      }
+      .fb-o {
+        border-color: #fb923c;
+        color: #fb923c;
+      }
+      .fb-g {
+        border-color: #4ade80;
+        color: #4ade80;
+      }
+      .fa {
+        color: #64748b;
+        font-size: 0.6em;
+      }
+
+      /* ─── Section label ──────────────────────────────────────────────────── */
+      .sect {
+        display: inline-block;
+        background: rgba(196, 181, 253, 0.12);
+        border: 1px solid rgba(196, 181, 253, 0.3);
+        color: #c4b5fd;
+        padding: 2px 10px;
+        border-radius: 4px;
+        font-size: 0.42em;
+        font-family: monospace;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        margin-bottom: 6px;
+      }
+
+      /* ─── Progress / slide number ────────────────────────────────────────── */
+      .reveal .progress {
+        background: #1e3a5f;
+        height: 3px;
+      }
+      .reveal .progress span {
+        background: #c4b5fd;
+      }
+      .reveal .slide-number {
+        color: #64748b;
+        font-size: 0.5em;
+        bottom: 12px;
+        right: 16px;
+      }
+
+      /* ─── Demo slide special ─────────────────────────────────────────────── */
+      .demo-center {
+        text-align: center;
+        margin: 20px 0;
+      }
+      .demo-big {
+        font-size: 3.5em;
+        font-weight: 900;
+        color: #c4b5fd;
+        font-family: monospace;
+        letter-spacing: 0.05em;
+        line-height: 1;
+      }
+      .demo-url {
+        font-size: 0.8em;
+        color: #38bdf8;
+        font-family: monospace;
+        margin-top: 10px;
+      }
+
+      /* ─── Title slide ────────────────────────────────────────────────────── */
+      .title-sub {
+        font-size: 0.62em;
+        color: #64748b;
+        margin: 6px 0 18px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="reveal">
+      <div class="slides">
+        <!-- ══════════════════════════════════════════ 1 — TITLU -->
+        <section>
+          <div class="sect">IAS-Overclockers</div>
+          <h1>Procesor pe 16 biți<br />cu I/O, Întreruperi și ASIP</h1>
+          <p class="title-sub">
+            Verilog + Python Assembler &nbsp;·&nbsp; Arhitectura Von Neumann
+          </p>
+          <div class="stats">
+            <div class="stat">
+              <div class="n">60</div>
+              <div class="l">Instrucțiuni</div>
+            </div>
+            <div class="stat">
+              <div class="n">98</div>
+              <div class="l">Stări FSM</div>
+            </div>
+            <div class="stat">
+              <div class="n">4</div>
+              <div class="l">Surse IRQ</div>
+            </div>
+            <div class="stat">
+              <div class="n">654</div>
+              <div class="l">Teste automate</div>
+            </div>
+          </div>
+          <div class="box box-acc" style="margin-top: 12px">
+            <p
+              style="
+                margin: 0;
+                font-size: 0.6em;
+                font-style: italic;
+                color: #c4b5fd;
+              "
+            >
+              „Înțelegerea unui calculator modern necesită implementare
+              efectivă, nu doar teorie."
+            </p>
+          </div>
+          <p style="color: #64748b; font-size: 0.5em; margin-top: 14px">
+            Echipa: IAS-Overclockers &nbsp;·&nbsp; Curs: Ingineria
+            Calculatoarelor
+          </p>
+        </section>
+
+        <!-- ══════════════════════════════════════════ 2 — MOTIVAȚIE -->
+        <section>
+          <div class="sect">Motivație</div>
+          <h2>De ce am construit un procesor?</h2>
+          <div class="two-col">
+            <div>
+              <h3>Întrebări fundamentale</h3>
+              <ul>
+                <li>
+                  Cum transformă UC o instrucțiune binară în semnale
+                  electronice?
+                </li>
+                <li>
+                  Cum comunică CPU cu periferice
+                  <em>(tastatură, display, timer)</em>?
+                </li>
+                <li>
+                  Cum tratează hardware-ul
+                  <strong>evenimente asincrone</strong> fără să blocheze?
+                </li>
+                <li>
+                  Cum extinzi un CPU general cu un
+                  <strong>accelerator dedicat</strong>?
+                </li>
+              </ul>
+            </div>
+            <div>
+              <h3>Gap-ul identificat</h3>
+              <ul>
+                <li>
+                  <em>Procesoare reale</em> (x86, ARM) — prea complexe pentru
+                  pedagogie
+                </li>
+                <li>
+                  <em>Simulatoare clasice</em> (LMC, MARIE) — prea simple, fără
+                  I/O real
+                </li>
+              </ul>
+              <div class="box box-acc" style="margin-top: 10px">
+                <p style="margin: 0; font-size: 0.62em; line-height: 1.5">
+                  <strong>IAS-Overclockers</strong> ocupă exact acest spațiu:<br />
+                  destul de simplu să fie înțeles complet,<br />
+                  destul de complet să demonstreze un sistem real.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ══════════════════════════════════════════ 3 — STADIUL ARTEI -->
+        <section>
+          <div class="sect">State of the art</div>
+          <h2>Ce lipsea din simulatoarele existente?</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Simulator</th>
+                <th>Lățime</th>
+                <th>Instrucțiuni</th>
+                <th>I/O MMIO</th>
+                <th>Întreruperi</th>
+                <th>Accelerator</th>
+                <th>HDL nativ</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>LMC</td>
+                <td class="dim">3 zec.</td>
+                <td class="dim">10</td>
+                <td class="no">✗</td>
+                <td class="no">✗</td>
+                <td class="no">✗</td>
+                <td class="no">✗</td>
+              </tr>
+              <tr>
+                <td>MARIE</td>
+                <td class="dim">16b</td>
+                <td class="dim">13</td>
+                <td class="no">✗</td>
+                <td class="no">✗</td>
+                <td class="no">✗</td>
+                <td class="no">✗</td>
+              </tr>
+              <tr>
+                <td>LC-3</td>
+                <td class="dim">16b</td>
+                <td class="dim">15</td>
+                <td class="dim">parțial</td>
+                <td class="dim">parțial</td>
+                <td class="no">✗</td>
+                <td class="no">✗</td>
+              </tr>
+              <tr>
+                <td>RISC-V Ripes</td>
+                <td class="dim">32b</td>
+                <td class="dim">47</td>
+                <td class="no">✗</td>
+                <td class="no">✗</td>
+                <td class="no">✗</td>
+                <td class="no">✗</td>
+              </tr>
+              <tr class="hl">
+                <td><strong>IAS-Overclockers</strong></td>
+                <td class="cyn">16b</td>
+                <td class="cyn">60</td>
+                <td class="yes">✓</td>
+                <td class="yes">✓ (4 surse)</td>
+                <td class="yes">✓ SHA-256</td>
+                <td class="yes">✓ Verilog</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="box box-acc" style="margin-top: 12px">
+            <p style="margin: 0; font-size: 0.6em; font-style: italic">
+              Niciun simulator educațional nu combina toate acestea într-un
+              singur sistem.
+            </p>
+          </div>
+        </section>
+
+        <!-- ══════════════════════════════════════════ 4 — ARHITECTURĂ -->
+        <section>
+          <div class="sect">Arhitectură</div>
+          <h2>Arhitectura Sistemului</h2>
+          <div class="two-col two-col-wide">
+            <div>
+              <pre>
+╔═════════════ cpu.v ══════════════╗
+│                                  │
+│  cu.v FSM --> alu.v              │
+│  98 stări      16-bit ALU        │
+│  I_flag                          │
+│  io_we/re    Registre:           │
+│  intr_ack    A, X, Y, PC, SP     │
+│              AR, DR, IR, FLAGS   │
+│                                  │
+│  AR[10]=0 --> memory.v (RAM)     │
+│  AR[10]=1 --> io_controller      │
+│                                  │
+│  interrupt_ctrl <- io_controller │
+│  TIMER > KBD    KBD/DISP/TIMER   │
+│  > MINE > EXT IER / ports 64-65  │
+│                                  │
+│  ╔════ mining_core.v ════╗       │
+│  ║    SHA-256 ASIP       ║       │
+│  ╚═══════════════════════╝       │
+╚══════════════════════════════════╝
+</pre
+              >
+            </div>
+            <div>
+              <h3>Caracteristici cheie</h3>
+              <ul>
+                <li><strong>16-bit</strong> Von Neumann, memorie unificată</li>
+                <li><strong>1024 × 16b</strong> memorie, adresare 10-bit</li>
+                <li>
+                  <strong>8 registre:</strong> A, X, Y, PC, SP, AR, DR, IR
+                </li>
+                <li><strong>FLAGS:</strong> Z, N, C, O</li>
+                <li>FSM cu <strong>98 stări</strong> în <code>cu.v</code></li>
+                <li>Routing <code>AR[10]</code>: RAM ↔ I/O</li>
+              </ul>
+              <div class="box" style="margin-top: 10px">
+                <h3>Module Verilog</h3>
+                <span class="tag tag-c">cu.v</span>
+                <span class="tag tag-c">alu.v</span>
+                <span class="tag tag-c">memory.v</span>
+                <span class="tag tag-o">io_controller.v</span>
+                <span class="tag tag-o">interrupt_controller.v</span>
+                <span class="tag tag-g">mining_core.v</span>
+                <span class="tag tag-p">+ 14 aux</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ══════════════════════════════════════════ 5 — ISA -->
+        <section>
+          <div class="sect">ISA</div>
+          <h2>Setul de instrucțiuni — 60 instrucțiuni</h2>
+          <div class="two-col">
+            <div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Categorie</th>
+                    <th>Nr.</th>
+                    <th>Exemple</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Control flux</td>
+                    <td class="cyn">14</td>
+                    <td class="dim">BRA, BRZ, JMP, RET, NOP…</td>
+                  </tr>
+                  <tr>
+                    <td>Memorie</td>
+                    <td class="cyn">4</td>
+                    <td class="dim">LD, ST, PUSH, POP</td>
+                  </tr>
+                  <tr>
+                    <td>Aritmetică</td>
+                    <td class="cyn">13</td>
+                    <td class="dim">ADD, SUB, MUL, MOVI…</td>
+                  </tr>
+                  <tr>
+                    <td>Shift / Rotate</td>
+                    <td class="cyn">8</td>
+                    <td class="dim">LSL, LSR, RSL, RSR…</td>
+                  </tr>
+                  <tr>
+                    <td>Logice</td>
+                    <td class="cyn">8</td>
+                    <td class="dim">AND, OR, XOR, NOT…</td>
+                  </tr>
+                  <tr>
+                    <td>Comparație</td>
+                    <td class="cyn">4</td>
+                    <td class="dim">CMP, TST, CMPI, TSTI</td>
+                  </tr>
+                  <tr>
+                    <td>Transfer</td>
+                    <td class="cyn">2</td>
+                    <td class="dim">MOV, MOVR</td>
+                  </tr>
+                  <tr style="background: rgba(56, 189, 248, 0.08)">
+                    <td><em>I/O</em></td>
+                    <td class="cyn">2</td>
+                    <td><em>IN port, OUT port</em></td>
+                  </tr>
+                  <tr style="background: rgba(196, 181, 253, 0.08)">
+                    <td><strong>Întreruperi</strong></td>
+                    <td class="acc">4</td>
+                    <td><strong>EI, DI, IRET, WAIT</strong></td>
+                  </tr>
+                  <tr style="background: rgba(251, 146, 60, 0.08)">
+                    <td class="org">ASIP Mining</td>
+                    <td class="org">1</td>
+                    <td class="org">MINE</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div>
+              <h3>Format instrucțiune (16 biți)</h3>
+              <pre><code>[15:10] opcode (6b) + [9:0] operand (10b)</code></pre>
+
+              <h3>Instrucțiuni unice față de cele clasice</h3>
+              <div class="box" style="margin-top: 4px">
+                <span class="tag tag-c">IN port</span>
+                <span class="tag tag-c">OUT port</span>
+                <span class="tag tag-p">EI</span>
+                <span class="tag tag-p">DI</span>
+                <span class="tag tag-p">IRET</span>
+                <span class="tag tag-p">WAIT</span>
+                <span class="tag tag-o">MINE</span>
+                <p style="font-size: 0.6em; color: #64748b; margin: 6px 0 0">
+                  Absente din orice simulator educațional existent.
+                </p>
+              </div>
+
+              <div class="box" style="margin-top: 8px">
+                <p style="margin: 0; font-size: 0.6em; line-height: 1.5">
+                  <strong class="cyn">WAIT</strong> — CPU idle până la prima
+                  întrerupere.<br />
+                  Analogul ARM <code>WFI</code> / RISC-V <code>WFI</code>. Zero
+                  cicluri irosite.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ══════════════════════════════════════════ 6 — MMIO -->
+        <section>
+          <div class="sect">I/O</div>
+          <h2>I/O cu mapare în memorie (MMIO)</h2>
+          <div class="two-col two-col-wide">
+            <div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Port</th>
+                    <th>Nume</th>
+                    <th>R/W</th>
+                    <th>Descriere</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="cyn">0</td>
+                    <td><code>KBD_DATA</code></td>
+                    <td>R</td>
+                    <td>ASCII tastă apăsată</td>
+                  </tr>
+                  <tr>
+                    <td class="cyn">1</td>
+                    <td><code>KBD_STATUS</code></td>
+                    <td>R</td>
+                    <td>bit 0 = dată disponibilă</td>
+                  </tr>
+                  <tr>
+                    <td class="cyn">16</td>
+                    <td><code>DISP_DATA</code></td>
+                    <td>W</td>
+                    <td>Caracter de afișat</td>
+                  </tr>
+                  <tr>
+                    <td class="cyn">32</td>
+                    <td><code>TIMER_CTRL</code></td>
+                    <td>R/W</td>
+                    <td>bit0=enable, bit1=periodic</td>
+                  </tr>
+                  <tr>
+                    <td class="cyn">33</td>
+                    <td><code>TIMER_PERIOD</code></td>
+                    <td>R/W</td>
+                    <td>Valoare de reîncărcare</td>
+                  </tr>
+                  <tr>
+                    <td class="cyn">48</td>
+                    <td><code>IER</code></td>
+                    <td>R/W</td>
+                    <td>Interrupt Enable Register</td>
+                  </tr>
+                  <tr>
+                    <td class="cyn">49</td>
+                    <td><code>IFR</code></td>
+                    <td>R</td>
+                    <td>Interrupt Flag Register</td>
+                  </tr>
+                  <tr style="background: rgba(251, 146, 60, 0.08)">
+                    <td class="org">64</td>
+                    <td><code>MINE_HASH</code></td>
+                    <td>R</td>
+                    <td>Hash rezultat mining</td>
+                  </tr>
+                  <tr style="background: rgba(251, 146, 60, 0.08)">
+                    <td class="org">65</td>
+                    <td><code>MINE_NONCE</code></td>
+                    <td>R</td>
+                    <td>Nonce câștigător</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div>
+              <h3>Mecanism routing</h3>
+              <pre><code>AR[10] = 0  →  memory.v  (RAM)
+AR[10] = 1  →  io_controller</code></pre>
+
+              <h3>Instrucțiuni I/O</h3>
+              <div class="box" style="margin-top: 4px">
+                <p style="margin: 0; font-size: 0.62em; line-height: 1.8">
+                  <strong class="cyn">IN port</strong> — citește periferic →
+                  <code>A</code><br />
+                  <strong class="cyn">OUT port</strong> — scrie <code>A</code> →
+                  periferic<br />
+                  <span class="dim">3 stări FSM fiecare (72–77)</span>
+                </p>
+              </div>
+
+              <h3 style="margin-top: 10px">Periferice disponibile</h3>
+              <span class="tag tag-c">Tastatură</span>
+              <span class="tag tag-c">Display</span>
+              <span class="tag tag-c">Timer</span>
+              <span class="tag tag-o">Mining ASIP</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- ══════════════════════════════════════════ 7 — ÎNTRERUPERI -->
+        <section>
+          <div class="sect">Întreruperi</div>
+          <h2>Sistemul de întreruperi</h2>
+          <div class="two-col">
+            <div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Sursă</th>
+                    <th>Prioritate</th>
+                    <th>IVT</th>
+                    <th>Analogie</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="acc">TIMER</td>
+                    <td class="yes">1 (max)</td>
+                    <td>190</td>
+                    <td class="dim">RTOS tick</td>
+                  </tr>
+                  <tr>
+                    <td class="acc">KBD</td>
+                    <td class="cyn">2</td>
+                    <td>191</td>
+                    <td class="dim">Linux kbd IRQ</td>
+                  </tr>
+                  <tr>
+                    <td class="acc">MINE</td>
+                    <td class="cyn">3</td>
+                    <td>192</td>
+                    <td class="dim">DMA / GPU fence</td>
+                  </tr>
+                  <tr>
+                    <td class="acc">EXT</td>
+                    <td class="dim">4 (min)</td>
+                    <td>193</td>
+                    <td class="dim">GPIO IRQ</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div class="box" style="margin-top: 10px">
+                <p style="margin: 0; font-size: 0.6em; line-height: 1.6">
+                  <strong>Control:</strong>
+                  <span class="tag tag-p">EI</span>
+                  <span class="tag tag-p">DI</span>
+                  <span class="tag tag-p">IRET</span>
+                  + <code>IER</code> (mascare per sursă)
+                </p>
+              </div>
+            </div>
+            <div>
+              <h3>Flux hardware automat</h3>
+              <div class="flow">
+                <div class="fb fb-c">INTR_CHECK</div>
+                <span class="fa">→</span>
+                <div class="fb fb-o">intr_ack<br />I_flag=0</div>
+                <span class="fa">→</span>
+                <div class="fb fb-o">push FLAGS<br />push PC</div>
+                <span class="fa">→</span>
+                <div class="fb fb-c">IVT lookup</div>
+                <span class="fa">→</span>
+                <div class="fb fb-g">ISR</div>
+              </div>
+              <div class="flow" style="margin-top: 4px">
+                <div class="fb fb-g">IRET</div>
+                <span class="fa">→</span>
+                <div class="fb fb-o">pop PC<br />pop FLAGS</div>
+                <span class="fa">→</span>
+                <div class="fb fb-c">I_flag=1<br />continuare</div>
+              </div>
+              <div class="box" style="margin-top: 8px">
+                <p style="margin: 0; font-size: 0.6em; line-height: 1.5">
+                  Context save/restore
+                  <strong>complet hardware automat</strong>.<br />
+                  Echivalent ARM Cortex-M NVIC.
+                </p>
+              </div>
+              <pre
+                style="margin-top: 8px; font-size: 0.5em"
+              ><code>FETCH → INTR_CHECK ─── normal ──→ DECODE
+                   └─ IRQ ──→ INTR_SAVE → ISR</code></pre>
+            </div>
+          </div>
+        </section>
+
+        <!-- ══════════════════════════════════════════ 8 — ASIP -->
+        <section>
+          <div class="sect">ASIP</div>
+          <h2>Extensia ASIP — Instrucțiunea MINE</h2>
+          <div class="two-col">
+            <div>
+              <h3>Instrucțiunea MINE (SHA-256 simplificat)</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Registru</th>
+                    <th>Direcție</th>
+                    <th>Rol</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="cyn">X</td>
+                    <td>Input</td>
+                    <td>Date de hash-uit</td>
+                  </tr>
+                  <tr>
+                    <td class="cyn">Y</td>
+                    <td>Input</td>
+                    <td>Nonce de start</td>
+                  </tr>
+                  <tr>
+                    <td class="cyn">A</td>
+                    <td>Input</td>
+                    <td>Target (difficulty)</td>
+                  </tr>
+                  <tr>
+                    <td class="yes">X</td>
+                    <td>Output</td>
+                    <td>Nonce câștigător <span class="dim">(suprascris)</span></td>
+                  </tr>
+                  <tr>
+                    <td class="yes">A</td>
+                    <td>Output</td>
+                    <td>Hash final <span class="dim">(suprascris)</span></td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <pre
+                style="margin-top: 10px"
+              ><code>MINE → mining_done → io_controller
+     → mining_irq → MINE_ISR:
+       IN 64  ; citește hash
+       IN 65  ; citește nonce</code></pre>
+            </div>
+            <div>
+              <h3>Software vs Hardware</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Aspect</th>
+                    <th>Software</th>
+                    <th>ASIP</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Cicluri/rundă</td>
+                    <td class="no">~200+</td>
+                    <td class="yes">1</td>
+                  </tr>
+                  <tr>
+                    <td>Paralelism</td>
+                    <td class="dim">secvențial</td>
+                    <td class="yes">pipeline</td>
+                  </tr>
+                  <tr>
+                    <td>Ocupă CPU</td>
+                    <td class="no">100%</td>
+                    <td class="yes">nucleu sep.</td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <h3 style="margin-top: 10px">Pattern calcul eterogen modern</h3>
+              <div class="box">
+                <p style="margin: 0; font-size: 0.6em; line-height: 1.7">
+                  <span class="tag tag-o">ARM + DMA</span> → DMA completion
+                  IRQ<br />
+                  <span class="tag tag-o">CPU + GPU</span> → fence interrupt<br />
+                  <span class="tag tag-o">CPU + NPU</span> → ML completion
+                  IRQ<br />
+                  <span class="tag tag-p">IAS-Overclockers</span> → MINE +
+                  mining_irq
+                </p>
+                <p style="font-size: 0.55em; color: #64748b; margin: 6px 0 0">
+                  Primul simulator educațional care demonstrează acest pattern.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ══════════════════════════════════════════ 9 — TESTARE -->
+        <section>
+          <div class="sect">Testare</div>
+          <h2>Testare și Validare</h2>
+          <div class="stats" style="grid-template-columns: repeat(3, 1fr)">
+            <div class="stat">
+              <div class="n">27</div>
+              <div class="l">Module testbench</div>
+            </div>
+            <div class="stat">
+              <div class="n" style="color: #38bdf8">654</div>
+              <div class="l">Cazuri de test</div>
+            </div>
+            <div class="stat">
+              <div class="n" style="color: #4ade80">100%</div>
+              <div class="l">PASS</div>
+            </div>
+          </div>
+          <div class="two-col" style="margin-top: 10px">
+            <div>
+              <h3>Testbench-uri cheie</h3>
+              <ul>
+                <li><code>cpu_tb.v</code> — integrare completă CPU</li>
+                <li><code>cu_tb.v</code> — toate stările FSM</li>
+                <li><code>alu_tb.v</code> — aritmetică, logică, flags</li>
+                <li>
+                  <code class="org">io_controller_tb.v</code> — periferice MMIO
+                </li>
+                <li>
+                  <code class="acc">interrupt_controller_tb.v</code> — arbitrare
+                </li>
+                <li>
+                  <code class="acc">cpu_interrupt_tb.v</code> — end-to-end IRQ
+                </li>
+              </ul>
+            </div>
+            <div>
+              <h3>Toolchain & comenzi</h3>
+              <pre><code>make test ASM=program.asm
+make modules   # toate 27 TB
+make asm-test  # validare assembler
+make wave      # GTKWave VCD</code></pre>
+              <div class="box box-grn" style="margin-top: 8px">
+                <p style="margin: 0; font-size: 0.6em">
+                  <strong>Assembler Python</strong> — 2 pași, label-uri,<br />
+                  imediat 9-bit cu extensie semn.<br />
+                  <span class="tag tag-g">480+ teste assembler</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ══════════════════════════════════════════ 10 — DEMO -->
+        <section>
+          <div class="sect">Demo Live</div>
+          <h2>Simulator browser interactiv</h2>
+          <div class="demo-center">
+            <div class="demo-big">DEMO</div>
+            <div class="demo-url">localhost:5000</div>
+          </div>
+          <div class="two-col" style="margin-top: 16px">
+            <div class="box">
+              <h3>Pași demo</h3>
+              <ol style="margin-left: 1em">
+                <li>Selectează <em>Keyboard Echo</em> → arată polling I/O</li>
+                <li>Introdu text în câmpul <em>Keyboard input</em>, apasă <strong>Run</strong></li>
+                <li>Selectează <em>Timer Interrupt</em> → arată EI/WAIT/IRET</li>
+                <li>Selectează <em>SHA-256 Mining</em> → arată acceleratorul ASIP</li>
+              </ol>
+            </div>
+            <div class="box">
+              <h3>Exemple disponibile</h3>
+              <span class="tag tag-c">Hello World</span>
+              <span class="tag tag-c">Arithmetic</span>
+              <span class="tag tag-c">Logic &amp; Shifts</span>
+              <span class="tag tag-c">Memory &amp; Stack</span>
+              <span class="tag tag-c">Subroutine</span>
+              <span class="tag tag-c">Keyboard Echo</span>
+              <span class="tag tag-c">Timer Interrupt</span>
+              <span class="tag tag-c">SHA-256 Mining</span>
+              <p style="margin: 8px 0 0; font-size: 0.6em; color: #64748b">
+                Editor assembly integrat, asamblare + simulare Verilog în timp
+                real.
+              </p>
+              <pre style="margin-top: 8px"><code>python3 server.py</code></pre>
+            </div>
+          </div>
+        </section>
+
+        <!-- ══════════════════════════════════════════ 11 — CONCLUZII -->
+        <section>
+          <div class="sect">Concluzii</div>
+          <h2>Concluzii și contribuții</h2>
+          <div class="two-col">
+            <div>
+              <h3>Ce am realizat</h3>
+              <ul>
+                <li>
+                  Procesor Von Neumann complet în <strong>Verilog</strong>
+                </li>
+                <li>
+                  <strong>60 instrucțiuni</strong> — I/O, întreruperi, ASIP
+                </li>
+                <li>MMIO cu 4 periferice reale simulate</li>
+                <li>Întreruperi hardware cu prioritate fixă și IVT</li>
+                <li>Accelerator SHA-256 cu interrupt-driven offload</li>
+                <li>Simulator browser cu Flask + HTML5 IDE</li>
+                <li><span class="yes">654 teste — 100% PASS</span></li>
+              </ul>
+            </div>
+            <div>
+              <h3>Valoare educațională</h3>
+              <ul>
+                <li>
+                  Demonstrează <em>fetch-decode-execute</em> vizibil în Verilog
+                </li>
+                <li>Arată cum funcționează MMIO și IRQ controller</li>
+                <li>
+                  Ilustrează patternul <strong>calcul eterogen modern</strong>
+                </li>
+                <li>
+                  Singurul simulator cu toate componentele unui sistem embedded
+                  real
+                </li>
+              </ul>
+              <div class="box box-grn" style="margin-top: 12px">
+                <p style="margin: 0; font-size: 0.62em; line-height: 1.5">
+                  Gap acoperit: între LMC/MARIE și ARM/x86 —<br />
+                  <strong class="yes">sistem complet, înțeles complet.</strong>
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+    <script>
+      Reveal.initialize({
+        hash: true,
+        slideNumber: "c/t",
+        progress: true,
+        transition: "slide",
+        transitionSpeed: "fast",
+        center: false,
+        width: 1100,
+        height: 700,
+        margin: 0.04,
+      });
+    </script>
+  </body>
+</html>

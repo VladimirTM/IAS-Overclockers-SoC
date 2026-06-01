@@ -9,7 +9,7 @@
 
   body {
     font-family: 'Segoe UI', system-ui, sans-serif;
-    background: #090d1e;
+    background: #0c1028;
     color: #eaf0ff;
     height: 100vh;
     display: flex;
@@ -18,8 +18,8 @@
   }
 
   header {
-    background: #13172e;
-    border-bottom: 1px solid #2e3460;
+    background: #171d3a;
+    border-bottom: 1px solid #3c4478;
     padding: 10px 20px;
     display: flex;
     align-items: center;
@@ -29,18 +29,18 @@
   header h1 { font-size: 1rem; font-weight: 600; color: #c4b5fd; letter-spacing: 0.03em; text-shadow: 0 0 18px rgba(196,181,253,0.35); }
   header .chip {
     font-size: 0.7rem;
-    background: #242858;
-    color: #a5b4d8;
+    background: #2e3470;
+    color: #b8c8ee;
     padding: 2px 8px;
     border-radius: 999px;
   }
   .mode-link {
     margin-left: auto;
     font-size: 0.68rem;
-    color: #4a5280;
+    color: #7880b8;
     text-decoration: none;
     padding: 3px 9px;
-    border: 1px solid #2d3148;
+    border: 1px solid #3c4268;
     border-radius: 6px;
     transition: color 0.15s, border-color 0.15s;
   }
@@ -61,20 +61,20 @@
     gap: 12px;
     overflow: hidden;
   }
-  .panel + .panel { border-left: 1px solid #2d3148; }
+  .panel + .panel { border-left: 1px solid #3c4268; }
 
   .label {
     font-size: 0.72rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: #6e7ec4;
+    color: #8898d8;
   }
 
   textarea {
     flex: 1;
-    background: #0e1124;
-    border: 1px solid #2a3060;
+    background: #111630;
+    border: 1px solid #364080;
     border-radius: 8px;
     color: #e2e8f0;
     font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
@@ -87,7 +87,7 @@
   }
   textarea:focus { border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99,102,241,0.22), 0 0 16px rgba(99,102,241,0.12); }
   textarea[readonly] { color: #c4b5fd; cursor: default; }
-  textarea::placeholder { color: #3a3f5c; }
+  textarea::placeholder { color: #52587c; }
 
   .kbd-row {
     display: flex;
@@ -97,8 +97,8 @@
   }
 
   .kbd-input {
-    background: #13151f;
-    border: 1px solid #2d3148;
+    background: #171b2e;
+    border: 1px solid #3c4268;
     border-radius: 8px;
     color: #fbbf24;
     font-family: 'Fira Code', 'Consolas', monospace;
@@ -109,7 +109,7 @@
     width: 100%;
   }
   .kbd-input:focus { border-color: #fbbf24; box-shadow: 0 0 0 2px rgba(251,191,36,0.2), 0 0 12px rgba(251,191,36,0.1); }
-  .kbd-input::placeholder { color: #3a3f5c; }
+  .kbd-input::placeholder { color: #52587c; }
 
   .actions {
     display: flex;
@@ -127,7 +127,7 @@
     transition: opacity 0.15s, transform 0.1s;
   }
   button:active { transform: scale(0.97); }
-  button:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+  button:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
 
   #btn-run {
     background: #5048e8;
@@ -137,19 +137,26 @@
   }
   #btn-run:hover:not(:disabled) { background: #4338ca; box-shadow: 0 0 18px rgba(99,102,241,0.55); }
 
-  #btn-clear {
-    background: #1e2235;
-    color: #94a3b8;
-    border: 1px solid #2d3148;
+  #btn-stop {
+    background: #242848;
+    color: #f87171;
+    border: 1px solid #3c4268;
   }
-  #btn-clear:hover { background: #252840; }
+  #btn-stop:hover:not(:disabled) { background: #381818; border-color: #a02020; }
+
+  #btn-clear {
+    background: #242848;
+    color: #a8b8d0;
+    border: 1px solid #3c4268;
+  }
+  #btn-clear:hover { background: #2c3050; }
 
   #btn-help {
-    background: #1e2235;
+    background: #242848;
     color: #c4b5fd;
-    border: 1px solid #2d3148;
+    border: 1px solid #3c4268;
   }
-  #btn-help:hover { background: #252840; }
+  #btn-help:hover { background: #2c3050; }
 
   .status-box {
     flex-shrink: 0;
@@ -161,22 +168,22 @@
   }
   .status-box.error {
     display: block;
-    background: #2d1515;
-    border: 1px solid #7f1d1d;
+    background: #381818;
+    border: 1px solid #a02020;
     color: #fca5a5;
     white-space: pre-wrap;
     font-family: 'Fira Code', monospace;
   }
   .status-box.warning {
     display: block;
-    background: #292010;
-    border: 1px solid #78350f;
+    background: #352815;
+    border: 1px solid #985018;
     color: #fbbf24;
   }
   .status-box.info {
     display: block;
-    background: #0f1f2e;
-    border: 1px solid #1e4060;
+    background: #122638;
+    border: 1px solid #265580;
     color: #7dd3fc;
   }
 
@@ -193,17 +200,17 @@
     padding: 2px 7px;
     border-radius: 999px;
   }
-  .port-badge.kbd  { background: #4a1e05; color: #fcd34d; box-shadow: 0 0 8px rgba(252,211,77,0.2); }
-  .port-badge.disp { background: #0a2a52; color: #22d3ee; box-shadow: 0 0 8px rgba(34,211,238,0.2); }
+  .port-badge.kbd  { background: #5c2a08; color: #fcd34d; box-shadow: 0 0 10px rgba(252,211,77,0.35); }
+  .port-badge.disp { background: #0e3868; color: #22d3ee; box-shadow: 0 0 10px rgba(34,211,238,0.35); }
 
   /* ── UI Improvements ─────────────────────────────── */
 
   /* Example dropdown */
   #example-select {
-    background: #13151f;
-    border: 1px solid #2d3148;
+    background: #171b2e;
+    border: 1px solid #3c4268;
     border-radius: 7px;
-    color: #94a3b8;
+    color: #a8b8d0;
     font-size: 0.78rem;
     padding: 6px 10px;
     cursor: pointer;
@@ -213,16 +220,16 @@
     width: 100%;
   }
   #example-select:focus { border-color: #4f46e5; }
-  #example-select option { background: #1a1d27; }
+  #example-select option { background: #1e2238; }
 
   /* Line numbers + editor wrap */
   .editor-wrap {
     flex: 1;
     display: flex;
     min-height: 0;
-    border: 1px solid #2a3060;
+    border: 1px solid #364080;
     border-radius: 8px;
-    background: #0e1124;
+    background: #111630;
     overflow: hidden;
     transition: border-color 0.15s, box-shadow 0.15s;
   }
@@ -230,9 +237,9 @@
 
   #line-nums {
     width: 38px;
-    background: #0d0f18;
-    border-right: 1px solid #2d3148;
-    color: #3a4060;
+    background: #10122a;
+    border-right: 1px solid #3c4268;
+    color: #5560a0;
     font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
     font-size: 0.82rem;
     line-height: 1.6;
@@ -272,19 +279,19 @@
 
   /* Copy output button */
   #btn-copy {
-    background: #1e2235;
-    color: #94a3b8;
-    border: 1px solid #2d3148;
+    background: #242848;
+    color: #a8b8d0;
+    border: 1px solid #3c4268;
     font-size: 0.75rem;
     padding: 4px 10px;
   }
-  #btn-copy:hover:not(:disabled) { background: #252840; color: #e2e8f0; }
+  #btn-copy:hover:not(:disabled) { background: #2c3050; color: #e2e8f0; }
   #btn-copy.copied { background: #0f2f1a; border-color: #166534; color: #4ade80; }
 
   /* Elapsed run time */
   .run-time-label {
     font-size: 0.7rem;
-    color: #4a5280;
+    color: #7080b8;
     font-family: 'Fira Code', monospace;
     flex-shrink: 0;
     align-self: flex-start;
@@ -295,7 +302,7 @@
     body { height: auto; overflow: auto; }
     .workspace { grid-template-columns: 1fr; overflow: visible; height: auto; }
     .panel { min-height: 50vh; }
-    .panel + .panel { border-left: none; border-top: 1px solid #2d3148; }
+    .panel + .panel { border-left: none; border-top: 1px solid #3c4268; }
   }
 
   /* ── Help Modal ─────────────────────────────── */
@@ -311,8 +318,8 @@
   #modal-overlay.open { display: flex; }
 
   #modal {
-    background: #1a1d27;
-    border: 1px solid #2d3148;
+    background: #1e2238;
+    border: 1px solid #3c4268;
     border-radius: 12px;
     width: min(860px, 95vw);
     max-height: 85vh;
@@ -326,7 +333,7 @@
     align-items: center;
     justify-content: space-between;
     padding: 14px 20px;
-    border-bottom: 1px solid #2d3148;
+    border-bottom: 1px solid #3c4268;
     flex-shrink: 0;
   }
   #modal-header h2 { font-size: 0.95rem; color: #c4b5fd; }
@@ -334,13 +341,13 @@
   #modal-close {
     background: none;
     border: none;
-    color: #64748b;
+    color: #8090b0;
     font-size: 1.2rem;
     cursor: pointer;
     padding: 2px 6px;
     border-radius: 4px;
   }
-  #modal-close:hover { color: #e2e8f0; background: #252840; }
+  #modal-close:hover { color: #e2e8f0; background: #2c3050; }
 
   #modal-body {
     overflow-y: auto;
@@ -355,10 +362,10 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.1em;
-    color: #64748b;
+    color: #8090b0;
     margin-bottom: 10px;
     padding-bottom: 6px;
-    border-bottom: 1px solid #2d3148;
+    border-bottom: 1px solid #3c4268;
   }
 
   .instr-grid {
@@ -368,8 +375,8 @@
   }
 
   .instr-card {
-    background: #13151f;
-    border: 1px solid #1e2235;
+    background: #171b2e;
+    border: 1px solid #282e50;
     border-radius: 6px;
     padding: 8px 10px;
     display: flex;
@@ -383,7 +390,7 @@
   }
   .instr-card .desc {
     font-size: 0.72rem;
-    color: #64748b;
+    color: #8090b0;
   }
 
   .port-table {
@@ -394,13 +401,13 @@
   .port-table th {
     text-align: left;
     padding: 5px 10px;
-    color: #64748b;
+    color: #8090b0;
     font-weight: 600;
-    border-bottom: 1px solid #2d3148;
+    border-bottom: 1px solid #3c4268;
   }
   .port-table td {
     padding: 5px 10px;
-    border-bottom: 1px solid #1e2235;
+    border-bottom: 1px solid #282e50;
   }
   .port-table td:first-child {
     font-family: 'Fira Code', monospace;
@@ -409,8 +416,8 @@
   .port-table tr:last-child td { border-bottom: none; }
 
   .example-code {
-    background: #0d0f18;
-    border: 1px solid #2d3148;
+    background: #10122a;
+    border: 1px solid #3c4268;
     border-radius: 8px;
     padding: 12px 16px;
     font-family: 'Fira Code', 'Consolas', monospace;
@@ -420,7 +427,7 @@
     white-space: pre;
     overflow-x: auto;
   }
-  .example-code .cmt { color: #4a5280; }
+  .example-code .cmt { color: #7080b8; }
   .example-code .kw  { color: #c4b5fd; }
   .example-code .num { color: #fbbf24; }
   .example-code .lbl { color: #34d399; }
@@ -431,8 +438,123 @@
     flex-wrap: wrap;
     font-size: 0.78rem;
   }
-  .info-item { color: #94a3b8; }
+  .info-item { color: #a8b8d0; }
   .info-item span { color: #c4b5fd; font-family: monospace; }
+
+  /* Register Status button */
+  #btn-regs {
+    background: #242848;
+    color: #4ade80;
+    border: 1px solid #3c4268;
+  }
+  #btn-regs:hover:not(:disabled) { background: #142a20; border-color: #22a060; }
+
+  /* Register Status Modal */
+  #reg-modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+  #reg-modal-overlay.open { display: flex; }
+
+  #reg-modal {
+    background: #1e2238;
+    border: 1px solid #3c4268;
+    border-radius: 12px;
+    width: min(480px, 95vw);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  #reg-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-bottom: 1px solid #3c4268;
+    flex-shrink: 0;
+  }
+  #reg-modal-header h2 { font-size: 0.95rem; color: #4ade80; }
+
+  #reg-modal-close {
+    background: none;
+    border: none;
+    color: #8090b0;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+  #reg-modal-close:hover { color: #e2e8f0; background: #2c3050; }
+
+  #reg-modal-body {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .reg-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .reg-card {
+    background: #1a2038;
+    border: 1px solid #2e3a60;
+    border-radius: 8px;
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .reg-card:hover { background: #1f2844; border-color: #3a5080; }
+  .reg-card .reg-name {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #8090b0;
+  }
+  .reg-card .reg-val {
+    font-family: 'Fira Code', 'Consolas', monospace;
+    font-size: 1rem;
+    color: #4ade80;
+  }
+  .reg-card .reg-dec {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.72rem;
+    color: #7080b8;
+  }
+
+  .flags-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .flag-badge {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.8rem;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-weight: 600;
+  }
+  .flag-badge.set   { background: #142a20; color: #4ade80; border: 1px solid #22a060; }
+  .flag-badge.clear { background: #1a2038; color: #7080b8; border: 1px solid #2e3a60; }
+
+  #reg-no-data {
+    color: #8090b0;
+    font-size: 0.82rem;
+    text-align: center;
+    padding: 16px 0;
+  }
 </style>
 </head>
 <body>
@@ -451,9 +573,13 @@
     <select id="example-select">
       <option value="">— Load example… —</option>
       <option value="hello">Hello World</option>
-      <option value="echo">Echo Keyboard</option>
-      <option value="fibonacci">Fibonacci Sequence</option>
-      <option value="counter">Counter 0–9</option>
+      <option value="arithmetic">Arithmetic</option>
+      <option value="logic">Logic &amp; Shifts</option>
+      <option value="memory">Memory &amp; Stack</option>
+      <option value="subroutine">Subroutine</option>
+      <option value="echo">Keyboard Echo</option>
+      <option value="timer">Timer Interrupt</option>
+      <option value="mining">SHA-256 Mining</option>
     </select>
 
     <div class="editor-wrap">
@@ -476,7 +602,9 @@ END"></textarea>
 
     <div class="actions">
       <button id="btn-run"><span id="btn-run-label">&#9654; Run</span><kbd class="shortcut-hint">Ctrl&#8629;</kbd></button>
+      <button id="btn-stop" disabled>&#9632; Stop</button>
       <button id="btn-clear">&#10005; Clear</button>
+      <button id="btn-regs" disabled title="Run a program first">&#128202; Registers</button>
       <button id="btn-help">? Help</button>
     </div>
   </div>
@@ -512,18 +640,6 @@ END"></textarea>
           <div class="info-item">Immediate range: <span>−256 … +255</span> (9-bit signed)</div>
           <div class="info-item">Memory: <span>0x000–0x3FF</span> (1024 × 16-bit words)</div>
         </div>
-      </div>
-
-      <div class="help-section">
-        <h3>Example — Echo keyboard to display</h3>
-<div class="example-code"><span class="lbl">loop:</span>
-    <span class="kw">IN</span>   <span class="num">1</span>      <span class="cmt">; A = KBD_STATUS  (bit 0 = data ready)</span>
-    <span class="kw">ANDI</span> <span class="num">1</span>      <span class="cmt">; isolate data-ready bit</span>
-    <span class="kw">BRZ</span>  <span class="lbl">loop</span>  <span class="cmt">; no char yet → keep polling</span>
-    <span class="kw">IN</span>   <span class="num">0</span>      <span class="cmt">; A = KBD_DATA (ASCII), clears latch</span>
-    <span class="kw">OUT</span>  <span class="num">16</span>     <span class="cmt">; write A to display</span>
-    <span class="kw">BRA</span>  <span class="lbl">loop</span>  <span class="cmt">; next character</span>
-<span class="kw">END</span></div>
       </div>
 
       <div class="help-section">
@@ -678,6 +794,24 @@ END"></textarea>
   </div><!-- modal -->
 </div><!-- modal-overlay -->
 
+<!-- ── REGISTER STATUS MODAL ────────────────────── -->
+<div id="reg-modal-overlay">
+  <div id="reg-modal">
+    <div id="reg-modal-header">
+      <h2>&#128202; Register Status</h2>
+      <button id="reg-modal-close">&#10005;</button>
+    </div>
+    <div id="reg-modal-body">
+      <div id="reg-no-data">Run a program first to see register values.</div>
+      <div class="reg-grid" id="reg-grid" style="display:none"></div>
+      <div id="flags-section" style="display:none">
+        <div class="label" style="margin-bottom:6px">Flags</div>
+        <div class="flags-row" id="flags-row"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 (function () {
   // ── Element references ────────────────────────────────
@@ -687,11 +821,19 @@ END"></textarea>
   const statusEl    = document.getElementById('status-box');
   const btnRun      = document.getElementById('btn-run');
   const btnRunLabel = document.getElementById('btn-run-label');
+  const btnStop     = document.getElementById('btn-stop');
   const btnClear    = document.getElementById('btn-clear');
   const btnHelp     = document.getElementById('btn-help');
   const btnCopy     = document.getElementById('btn-copy');
+  const btnRegs     = document.getElementById('btn-regs');
   const overlay     = document.getElementById('modal-overlay');
   const modalClose  = document.getElementById('modal-close');
+  const regOverlay  = document.getElementById('reg-modal-overlay');
+  const regClose    = document.getElementById('reg-modal-close');
+  const regGrid     = document.getElementById('reg-grid');
+  const regNoData   = document.getElementById('reg-no-data');
+  const flagsSection= document.getElementById('flags-section');
+  const flagsRow    = document.getElementById('flags-row');
   const lineNumsEl  = document.getElementById('line-nums');
   const exampleSel  = document.getElementById('example-select');
   const runTimeEl   = document.getElementById('run-time');
@@ -717,7 +859,7 @@ END"></textarea>
   // ── Example programs ──────────────────────────────────
   const EXAMPLES = {
     hello:
-`; Hello World — outputs "Hello" to display
+`; Hello World — loads immediates into A and writes to display port
 MOVI 72       ; 'H'
 OUT 16
 MOVI 101      ; 'e'
@@ -730,49 +872,211 @@ MOVI 111      ; 'o'
 OUT 16
 END`,
 
+    arithmetic:
+`; Arithmetic — ADD/SUB/MUL/DIV/MOD with register and immediate forms
+; Computes 15 - 6 = 9, then 6 × 7 = 42; prints results
+
+; Register subtraction: 15 - 6 = 9
+MOVI 15
+MOV X, 6
+SUB X         ; A = 9
+ADDI 48       ; → ASCII '9'
+OUT 16
+MOVI 10
+OUT 16
+
+; Register multiply: 6 × 7 = 42, print "42"
+MOVI 6
+MOV X, 7
+MUL X         ; A = 42
+MOVR Y, A     ; save in Y
+
+DIVI 10       ; A = 4 (tens digit)
+ADDI 48
+OUT 16        ; '4'
+
+MOVR A, Y     ; restore 42
+MODI 10       ; A = 2 (units digit)
+ADDI 48
+OUT 16        ; '2'
+
+MOVI 10
+OUT 16
+END`,
+
+    logic:
+`; Logic & Shifts — AND mask, OR set bits, XOR flip, logical shift
+; Extracts both hex nibbles of 0xAB (171), then XOR case-toggle
+
+MOVI 171      ; A = 0xAB
+
+; High nibble: 0xAB >> 4 = 0x0A = 10 → print 'A'
+MOVR Y, A     ; save original
+LSRI 4        ; A = 10
+ADDI 55       ; 10 + 55 = 65 = 'A'
+OUT 16
+
+; Low nibble: 0xAB AND 0x0F = 0x0B = 11 → print 'B'
+MOVR A, Y
+ANDI 15       ; A = 11
+ADDI 55       ; 11 + 55 = 66 = 'B'
+OUT 16
+MOVI 10
+OUT 16
+
+; OR: set bit 5 of '@' (64) → 96 = backtick char
+MOVI 64
+ORI 32        ; set bit 5 → A = 96
+OUT 16
+MOVI 10
+OUT 16
+
+; XOR: flip bit 5 of 'A' (65) → 'a' (97)
+MOVI 65
+XORI 32       ; toggle case bit → 97 = 'a'
+OUT 16
+MOVI 10
+OUT 16
+END`,
+
+    memory:
+`; Memory & Stack — LD/ST (load/store RAM) and PUSH/POP (stack)
+
+; Store ASCII codes for 'A','B','C' at mem[200..202]
+MOV X, 65     ; 'A'
+ST X, 200
+INC X
+ST X, 201     ; 'B'
+INC X
+ST X, 202     ; 'C'
+
+; Read back and print
+LD X, 200
+MOVR A, X
+OUT 16        ; 'A'
+LD X, 201
+MOVR A, X
+OUT 16        ; 'B'
+LD X, 202
+MOVR A, X
+OUT 16        ; 'C'
+MOVI 10
+OUT 16
+
+; Stack: save X, clobber it, restore via POP
+MOV X, 90     ; 'Z' — sentinel
+PUSH X        ; push X=90 onto stack
+MOV X, 0      ; clobber X
+POP X         ; restore from stack → X = 90
+MOVR A, X
+OUT 16        ; print 'Z' — proves stack preserved X
+MOVI 10
+OUT 16
+END`,
+
+    subroutine:
+`; Subroutine — JMP/RET call+return, PUSH/POP register preservation
+; Main calls print_ch three times; subroutine clobbers X internally
+; but saves/restores it → sentinel MOV X,77 must survive all calls
+
+MOV X, 77     ; 'M' — sentinel that must survive subroutine calls
+
+MOVI 72       ; 'H'
+JMP print_ch
+MOVI 105      ; 'i'
+JMP print_ch
+MOVI 33       ; '!'
+JMP print_ch
+
+; Verify X = 77 ('M') was preserved through all calls
+MOVR A, X
+OUT 16        ; prints 'M' if X was correctly preserved
+MOVI 10
+OUT 16
+END
+
+; Subroutine: print char in A, saves and restores X
+print_ch:
+    PUSH X
+    MOV X, 0    ; clobber X (to prove PUSH/POP works)
+    OUT 16      ; print the char
+    POP X
+    RET`,
+
     echo:
-`; Echo Keyboard — reads keys and mirrors to display
+`; Keyboard Echo — polls KBD_STATUS, reads KBD_DATA, echoes to display
+; Type characters in the Keyboard Input field above, then Run
 loop:
-    IN   1      ; A = KBD_STATUS
+    IN   1      ; A = KBD_STATUS (port 1)
     ANDI 1      ; isolate data-ready bit
-    BRZ  loop   ; no char yet
-    IN   0      ; A = KBD_DATA (clears latch)
-    OUT  16     ; write to display
-    BRA  loop   ; next character
+    BRZ  loop   ; no char yet — keep polling
+    IN   0      ; A = KBD_DATA (port 0); reading clears latch
+    OUT  16     ; echo to display (port 16)
+    BRA  loop   ; wait for next character
 END`,
 
-    fibonacci:
-`; Fibonacci — prints single-digit fib values (0,1,1,2,3,5,8)
-; X = prev, Y = curr; stops when value > 9
-MOV X, 0
-MOV Y, 1
-fib_loop:
-    MOVR A, X
-    CMPI 9
-    BGT  fib_done
-    ADDI 48       ; convert to ASCII digit
-    OUT  16
-    MOVI 10
-    OUT  16       ; newline
-    MOVR A, Y
-    ADD  X
-    MOVR X, Y
-    MOVR Y, A
-    BRA  fib_loop
-fib_done:
-END`,
+    timer:
+`; Timer Interrupt — periodic ISR prints 'A'–'Z', one letter per tick
+; Demonstrates: IVT setup, EI / WAIT / IRET, TIMER peripheral (ports 32/33)
+; timer_isr is at address 15 — must equal the MOVI value at addr 0
 
-    counter:
-`; Counter 0-9 — outputs each digit
-MOV X, 0
-count_loop:
+    MOVI 15         ; ISR address (count instructions below to verify)
+    MOVR X, A       ; ST only accepts X or Y
+    ST X, 190       ; mem[190] = 15 — TIMER interrupt vector
+
+    MOVI 100        ; timer period: fires every 100 cycles
+    OUT 33          ; → TIMER_PERIOD
+    MOVI 3          ; bit0=enable, bit1=periodic
+    OUT 32          ; → TIMER_CTRL
+
+    MOVI 1          ; bit0 = unmask timer interrupt
+    OUT 48          ; → IER
+
+    MOVI 64         ; X = 64; first INC X = 65 = 'A'
+    MOVR X, A
+
+    EI              ; global interrupt enable (I_flag = 1)
+idle:
+    WAIT            ; halt CPU until interrupt fires
+    BRA idle
+    END             ; (never reached)
+
+timer_isr:          ; address 15
+    INC X
     MOVR A, X
-    ADDI 48       ; ASCII '0'
-    OUT  16
-    INC  X
-    MOVR A, X
-    CMPI 10
-    BLT  count_loop
+    CMPI 91         ; past 'Z' (90)?
+    BGE stop_timer
+    OUT 16          ; print current letter
+    IRET
+
+stop_timer:
+    MOVI 0
+    OUT 32          ; TIMER_CTRL = 0 → stop timer
+    IRET`,
+
+    mining:
+`; SHA-256 Mining — hardware MINE instruction searches for a valid nonce
+; Inputs:  A = target (hash must be < target), X = data, Y = start nonce
+; Outputs: A = hash result, X = winning nonce
+
+MOV X, 200    ; data block to hash
+MOV Y, 0      ; starting nonce
+MOVI 64       ; target difficulty: hash < 64
+
+MINE          ; hardware SHA-256 accelerator — finds nonce automatically
+
+; Verify: print 'P' if hash < 64 (pass), 'F' otherwise (fail)
+CMPI 64
+BLT pass
+MOVI 70       ; 'F'
+OUT 16
+BRA done
+pass:
+MOVI 80       ; 'P'
+OUT 16
+done:
+MOVI 10
+OUT 16
 END`
   };
 
@@ -790,7 +1094,55 @@ END`
   btnHelp.addEventListener('click', () => overlay.classList.add('open'));
   modalClose.addEventListener('click', () => overlay.classList.remove('open'));
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') overlay.classList.remove('open'); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { overlay.classList.remove('open'); regOverlay.classList.remove('open'); } });
+
+  // ── Register Status modal ─────────────────────────────
+  let _lastRegisters = null;
+
+  function renderRegisters(regs) {
+    regGrid.innerHTML = '';
+    flagsRow.innerHTML = '';
+
+    if (!regs || Object.keys(regs).length === 0) {
+      regNoData.style.display = '';
+      regGrid.style.display = 'none';
+      flagsSection.style.display = 'none';
+      return;
+    }
+
+    regNoData.style.display = 'none';
+    regGrid.style.display = '';
+
+    const ORDER = ['A', 'X', 'Y', 'SP', 'PC'];
+    for (const name of ORDER) {
+      if (!(name in regs)) continue;
+      const val = regs[name];
+      const hex = '0x' + val.toString(16).toUpperCase().padStart(4, '0');
+      const card = document.createElement('div');
+      card.className = 'reg-card';
+      card.innerHTML = `<span class="reg-name">${name}</span><span class="reg-val">${hex}</span><span class="reg-dec">${val} (dec) · ${val.toString(2).padStart(16,'0')} (bin)</span>`;
+      regGrid.appendChild(card);
+    }
+
+    if (regs.flags) {
+      flagsSection.style.display = '';
+      for (const [f, v] of Object.entries(regs.flags)) {
+        const span = document.createElement('span');
+        span.className = 'flag-badge ' + (v ? 'set' : 'clear');
+        span.textContent = `${f}=${v}`;
+        flagsRow.appendChild(span);
+      }
+    } else {
+      flagsSection.style.display = 'none';
+    }
+  }
+
+  btnRegs.addEventListener('click', () => {
+    renderRegisters(_lastRegisters);
+    regOverlay.classList.add('open');
+  });
+  regClose.addEventListener('click', () => regOverlay.classList.remove('open'));
+  regOverlay.addEventListener('click', e => { if (e.target === regOverlay) regOverlay.classList.remove('open'); });
 
   // ── Clear ─────────────────────────────────────────────
   btnClear.addEventListener('click', () => {
@@ -798,6 +1150,8 @@ END`
     kbdEl.value   = '';
     dispEl.value  = '';
     runTimeEl.textContent = '';
+    _lastRegisters = null;
+    btnRegs.disabled = true;
     updateLineNums();
     setStatus('', '');
     saveToStorage();
@@ -844,11 +1198,17 @@ END`
   }
 
   // ── Run ───────────────────────────────────────────────
+  let _abortCtrl = null;
+
+  btnStop.addEventListener('click', () => { if (_abortCtrl) _abortCtrl.abort(); });
+
   btnRun.addEventListener('click', async () => {
     const code = codeEl.value.trim();
     if (!code) { setStatus('error', 'No assembly code to run.'); return; }
 
+    _abortCtrl = new AbortController();
     btnRun.disabled = true;
+    btnStop.disabled = false;
     btnRunLabel.textContent = '⏳ Running…';
     dispEl.value = '';
     runTimeEl.textContent = '';
@@ -861,6 +1221,7 @@ END`
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code, kbd_input: kbdEl.value }),
+        signal: _abortCtrl.signal,
       });
 
       const data = await res.json();
@@ -880,14 +1241,23 @@ END`
       const elapsed = ((performance.now() - t0) / 1000).toFixed(2);
       runTimeEl.textContent = `Ran in ${elapsed}s`;
 
+      _lastRegisters = data.registers || null;
+      btnRegs.disabled = !_lastRegisters || Object.keys(_lastRegisters).length === 0;
+
       animateDisplay(data.display_output || '');
 
     } catch (err) {
-      setStatus('error', 'Network error: ' + err.message);
+      if (err.name === 'AbortError') {
+        setStatus('warning', 'Stopped.');
+      } else {
+        setStatus('error', 'Network error: ' + err.message);
+      }
       runTimeEl.textContent = '';
     } finally {
       btnRun.disabled = false;
+      btnStop.disabled = true;
       btnRunLabel.textContent = '▶ Run';
+      _abortCtrl = null;
     }
   });
 

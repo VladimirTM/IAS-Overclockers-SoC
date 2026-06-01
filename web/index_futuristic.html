@@ -8,27 +8,27 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --bg:           #010a10;
-    --panel-bg:     #021018;
-    --border:       #0e3045;
+    --bg:           #020e18;
+    --panel-bg:     #051a24;
+    --border:       #1b5272;
     --cyan:         #00eeff;
     --pink:         #ff1060;
     --green:        #00ffb0;
     --yellow:       #ffce40;
-    --text:         #96ddef;
-    --text-bright:  #d8f4ff;
-    --text-dim:     #1e5068;
-    --glow-c:       0 0 12px rgba(0,238,255,0.55);
-    --glow-p:       0 0 12px rgba(255,16,96,0.55);
-    --glow-g:       0 0 12px rgba(0,255,176,0.55);
+    --text:         #aaebf8;
+    --text-bright:  #eaf8ff;
+    --text-dim:     #3e7d98;
+    --glow-c:       0 0 14px rgba(0,238,255,0.65);
+    --glow-p:       0 0 14px rgba(255,16,96,0.65);
+    --glow-g:       0 0 14px rgba(0,255,176,0.65);
   }
 
   body {
     font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
     background-color: var(--bg);
     background-image:
-      linear-gradient(rgba(0,238,255,0.032) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,238,255,0.032) 1px, transparent 1px);
+      linear-gradient(rgba(0,238,255,0.058) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,238,255,0.058) 1px, transparent 1px);
     background-size: 36px 36px;
     color: var(--text);
     height: 100vh;
@@ -52,7 +52,7 @@
 
   /* ── Header ─────────────────────────────────────────── */
   header {
-    background: rgba(3,14,22,0.96);
+    background: rgba(5,18,28,0.97);
     border-bottom: 1px solid var(--border);
     padding: 0 20px;
     height: 46px;
@@ -172,7 +172,7 @@
     text-transform: uppercase;
     letter-spacing: 0.18em;
     color: var(--cyan);
-    opacity: 0.7;
+    opacity: 0.92;
   }
 
   /* ── Example select ─────────────────────────────────── */
@@ -191,7 +191,7 @@
     width: 100%;
   }
   #example-select:focus { border-color: var(--cyan); box-shadow: var(--glow-c); }
-  #example-select option { background: #040f16; }
+  #example-select option { background: #071828; }
 
   /* ── Editor wrap ────────────────────────────────────── */
   .editor-wrap {
@@ -304,12 +304,19 @@
     box-shadow: var(--glow-c);
   }
 
+  #btn-stop {
+    background: transparent;
+    color: #ff6b6b;
+    border: 1px solid #ff6b6b55;
+  }
+  #btn-stop:hover:not(:disabled) { background: #ff6b6b18; border-color: #ff6b6b; }
+
   #btn-clear {
     background: transparent;
-    color: var(--text-dim);
+    color: var(--text);
     border: 1px solid var(--border);
   }
-  #btn-clear:hover { color: var(--text); border-color: rgba(126,200,220,0.3); }
+  #btn-clear:hover { color: var(--text-bright); border-color: rgba(126,200,220,0.5); }
 
   #btn-help {
     background: transparent;
@@ -337,7 +344,7 @@
 
   #btn-copy {
     background: transparent;
-    color: var(--text-dim);
+    color: var(--text);
     border: 1px solid var(--border);
     font-size: 0.68rem;
     padding: 3px 10px;
@@ -352,8 +359,8 @@
     letter-spacing: 0.1em; padding: 2px 6px; border-radius: 2px;
     font-family: inherit; text-transform: uppercase;
   }
-  .port-badge.kbd  { background: rgba(255,200,64,0.08); color: var(--yellow); border: 1px solid rgba(255,200,64,0.25); }
-  .port-badge.disp { background: rgba(0,212,245,0.08); color: var(--cyan);   border: 1px solid rgba(0,212,245,0.25); }
+  .port-badge.kbd  { background: rgba(255,200,64,0.14); color: var(--yellow); border: 1px solid rgba(255,200,64,0.45); }
+  .port-badge.disp { background: rgba(0,212,245,0.12); color: var(--cyan);   border: 1px solid rgba(0,212,245,0.45); }
 
   /* ── Status box ─────────────────────────────────────── */
   .status-box {
@@ -361,12 +368,12 @@
     font-size: 0.73rem; padding: 8px 12px;
     display: none; line-height: 1.5; font-family: inherit;
   }
-  .status-box.error   { display:block; background:rgba(255,32,96,0.07);  border:1px solid rgba(255,32,96,0.35);  color:#ff6090; white-space:pre-wrap; }
-  .status-box.warning { display:block; background:rgba(255,200,64,0.07); border:1px solid rgba(255,200,64,0.3);  color:var(--yellow); }
-  .status-box.info    { display:block; background:rgba(0,212,245,0.05);  border:1px solid rgba(0,212,245,0.3);   color:var(--cyan); }
+  .status-box.error   { display:block; background:rgba(255,32,96,0.12);  border:1px solid rgba(255,32,96,0.55);  color:#ff80b0; white-space:pre-wrap; }
+  .status-box.warning { display:block; background:rgba(255,200,64,0.10); border:1px solid rgba(255,200,64,0.5);  color:var(--yellow); }
+  .status-box.info    { display:block; background:rgba(0,212,245,0.08);  border:1px solid rgba(0,212,245,0.5);   color:var(--cyan); }
 
   .run-time-label {
-    font-size: 0.62rem; color: var(--text-dim);
+    font-size: 0.62rem; color: var(--text);
     font-family: inherit; flex-shrink: 0;
     align-self: flex-start; letter-spacing: 0.06em;
   }
@@ -389,9 +396,9 @@
   #modal-overlay.open { display: flex; }
 
   #modal {
-    background: #030e16;
+    background: #061a28;
     border: 1px solid var(--cyan);
-    box-shadow: var(--glow-c), 0 0 60px rgba(0,212,245,0.07);
+    box-shadow: var(--glow-c), 0 0 60px rgba(0,212,245,0.12);
     border-radius: 3px;
     width: min(860px, 95vw); max-height: 85vh;
     display: flex; flex-direction: column; overflow: hidden;
@@ -422,7 +429,7 @@
 
   .help-section h3 {
     font-size: 0.6rem; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.18em; color: var(--cyan); opacity: 0.65;
+    letter-spacing: 0.18em; color: var(--cyan);
     margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border);
   }
 
@@ -433,38 +440,131 @@
   }
 
   .instr-card {
-    background: rgba(0,212,245,0.02); border: 1px solid var(--border);
+    background: rgba(0,212,245,0.05); border: 1px solid var(--border);
     border-radius: 2px; padding: 7px 10px;
     display: flex; flex-direction: column; gap: 2px;
     transition: border-color 0.15s;
   }
-  .instr-card:hover { border-color: rgba(0,212,245,0.25); }
+  .instr-card:hover { border-color: rgba(0,212,245,0.4); }
   .instr-card .syntax { font-family: inherit; font-size: 0.73rem; color: var(--cyan); }
-  .instr-card .desc   { font-size: 0.66rem; color: var(--text-dim); }
+  .instr-card .desc   { font-size: 0.66rem; color: var(--text); }
 
   .port-table { border-collapse: collapse; width: 100%; font-size: 0.73rem; font-family: inherit; }
   .port-table th {
-    text-align: left; padding: 5px 10px; color: var(--text-dim);
+    text-align: left; padding: 5px 10px; color: var(--text);
     font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
     font-size: 0.6rem; border-bottom: 1px solid var(--border);
   }
-  .port-table td { padding: 5px 10px; border-bottom: 1px solid rgba(11,37,53,0.6); }
+  .port-table td { padding: 5px 10px; border-bottom: 1px solid rgba(27,82,114,0.7); }
   .port-table td:first-child { color: var(--cyan); }
   .port-table tr:last-child td { border-bottom: none; }
 
   .example-code {
-    background: #020a10; border: 1px solid var(--border); border-radius: 2px;
+    background: #041220; border: 1px solid var(--border); border-radius: 2px;
     padding: 12px 16px; font-family: inherit; font-size: 0.73rem;
-    line-height: 1.7; color: var(--text); white-space: pre; overflow-x: auto;
+    line-height: 1.7; color: var(--text-bright); white-space: pre; overflow-x: auto;
   }
-  .example-code .cmt { color: var(--text-dim); }
+  .example-code .cmt { color: var(--text); }
   .example-code .kw  { color: var(--cyan); }
   .example-code .num { color: var(--yellow); }
   .example-code .lbl { color: var(--green); }
 
   .info-row { display: flex; gap: 24px; flex-wrap: wrap; font-size: 0.73rem; }
-  .info-item { color: var(--text-dim); }
+  .info-item { color: var(--text); }
   .info-item span { color: var(--cyan); font-family: inherit; }
+
+  /* Register Status button — dim when disabled, green when active */
+  #btn-regs {
+    background: transparent;
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+  }
+  #btn-regs:not(:disabled) {
+    color: var(--green);
+    border-color: rgba(0,255,176,0.6);
+  }
+  #btn-regs:hover:not(:disabled) { background: rgba(0,255,176,0.08); box-shadow: var(--glow-g); border-color: var(--green); }
+
+  /* Register Status Modal */
+  #reg-modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,4,8,0.88);
+    z-index: 200; align-items: center; justify-content: center;
+    backdrop-filter: blur(3px);
+  }
+  #reg-modal-overlay.open { display: flex; }
+
+  #reg-modal {
+    background: #04161f;
+    border: 1px solid rgba(0,255,176,0.5);
+    box-shadow: var(--glow-g), 0 0 60px rgba(0,255,176,0.1);
+    border-radius: 3px;
+    width: min(480px, 95vw);
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+
+  #reg-modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 20px; border-bottom: 1px solid rgba(0,255,176,0.15); flex-shrink: 0;
+  }
+  #reg-modal-header h2 {
+    font-size: 0.78rem; color: var(--green);
+    letter-spacing: 0.18em; text-transform: uppercase;
+    text-shadow: 0 0 14px var(--green);
+  }
+
+  #reg-modal-close {
+    background: none; border: 1px solid var(--border);
+    color: var(--text); font-size: 0.85rem; cursor: pointer;
+    padding: 2px 8px; border-radius: 2px; font-family: inherit;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  #reg-modal-close:hover { color: var(--pink); border-color: var(--pink); }
+
+  #reg-modal-body {
+    padding: 20px;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+
+  .reg-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  .reg-card {
+    background: rgba(0,255,176,0.06);
+    border: 1px solid rgba(0,255,176,0.2);
+    border-radius: 2px; padding: 10px 14px;
+    display: flex; flex-direction: column; gap: 4px;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .reg-card:hover { background: rgba(0,255,176,0.1); border-color: rgba(0,255,176,0.45); }
+  .reg-card .reg-name {
+    font-size: 0.58rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.18em; color: #5ec9a8;
+  }
+  .reg-card .reg-val {
+    font-family: inherit; font-size: 1rem; color: var(--green);
+    text-shadow: 0 0 12px rgba(0,255,176,0.7);
+  }
+  .reg-card .reg-dec {
+    font-family: inherit; font-size: 0.62rem; color: #4a9e88;
+  }
+
+  .flags-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .flag-badge {
+    font-family: inherit; font-size: 0.72rem;
+    padding: 3px 10px; border-radius: 2px; font-weight: 700;
+    letter-spacing: 0.1em; text-transform: uppercase;
+  }
+  .flag-badge.set   { background: rgba(0,255,176,0.12); color: var(--green); border: 1px solid rgba(0,255,176,0.5); text-shadow: 0 0 8px rgba(0,255,176,0.6); }
+  .flag-badge.clear { background: rgba(0,255,176,0.02); color: #4a9e88; border: 1px solid rgba(0,255,176,0.12); }
+
+  #reg-no-data {
+    color: #5ec9a8; font-size: 0.73rem;
+    text-align: center; padding: 16px 0; letter-spacing: 0.06em;
+  }
 </style>
 </head>
 <body>
@@ -484,9 +584,13 @@
     <select id="example-select">
       <option value="">— Load example… —</option>
       <option value="hello">Hello World</option>
-      <option value="echo">Echo Keyboard</option>
-      <option value="fibonacci">Fibonacci Sequence</option>
-      <option value="counter">Counter 0–9</option>
+      <option value="arithmetic">Arithmetic</option>
+      <option value="logic">Logic &amp; Shifts</option>
+      <option value="memory">Memory &amp; Stack</option>
+      <option value="subroutine">Subroutine</option>
+      <option value="echo">Keyboard Echo</option>
+      <option value="timer">Timer Interrupt</option>
+      <option value="mining">SHA-256 Mining</option>
     </select>
 
     <div class="editor-wrap">
@@ -509,7 +613,9 @@ END"></textarea>
 
     <div class="actions">
       <button id="btn-run"><span id="btn-run-label">&#9654; Run</span><kbd class="shortcut-hint">Ctrl&#8629;</kbd></button>
+      <button id="btn-stop" disabled>&#9632; Stop</button>
       <button id="btn-clear">&#10005; Clear</button>
+      <button id="btn-regs" disabled title="Run a program first">&#128300; Registers</button>
       <button id="btn-help">? Help</button>
     </div>
   </div>
@@ -545,18 +651,6 @@ END"></textarea>
           <div class="info-item">Immediate range: <span>−256 … +255</span> (9-bit signed)</div>
           <div class="info-item">Memory: <span>0x000–0x3FF</span> (1024 × 16-bit words)</div>
         </div>
-      </div>
-
-      <div class="help-section">
-        <h3>Example — Echo keyboard to display</h3>
-<div class="example-code"><span class="lbl">loop:</span>
-    <span class="kw">IN</span>   <span class="num">1</span>      <span class="cmt">; A = KBD_STATUS  (bit 0 = data ready)</span>
-    <span class="kw">ANDI</span> <span class="num">1</span>      <span class="cmt">; isolate data-ready bit</span>
-    <span class="kw">BRZ</span>  <span class="lbl">loop</span>  <span class="cmt">; no char yet → keep polling</span>
-    <span class="kw">IN</span>   <span class="num">0</span>      <span class="cmt">; A = KBD_DATA (ASCII), clears latch</span>
-    <span class="kw">OUT</span>  <span class="num">16</span>     <span class="cmt">; write A to display</span>
-    <span class="kw">BRA</span>  <span class="lbl">loop</span>  <span class="cmt">; next character</span>
-<span class="kw">END</span></div>
       </div>
 
       <div class="help-section">
@@ -711,6 +805,24 @@ END"></textarea>
   </div><!-- modal -->
 </div><!-- modal-overlay -->
 
+<!-- ── REGISTER STATUS MODAL ────────────────────── -->
+<div id="reg-modal-overlay">
+  <div id="reg-modal">
+    <div id="reg-modal-header">
+      <h2>// Register Status</h2>
+      <button id="reg-modal-close">&#10005;</button>
+    </div>
+    <div id="reg-modal-body">
+      <div id="reg-no-data">Run a program first to see register values.</div>
+      <div class="reg-grid" id="reg-grid" style="display:none"></div>
+      <div id="flags-section" style="display:none">
+        <div class="label" style="margin-bottom:6px;font-size:0.6rem;letter-spacing:0.18em">Flags</div>
+        <div class="flags-row" id="flags-row"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 (function () {
   // ── Element references ────────────────────────────────
@@ -720,11 +832,19 @@ END"></textarea>
   const statusEl    = document.getElementById('status-box');
   const btnRun      = document.getElementById('btn-run');
   const btnRunLabel = document.getElementById('btn-run-label');
+  const btnStop     = document.getElementById('btn-stop');
   const btnClear    = document.getElementById('btn-clear');
   const btnHelp     = document.getElementById('btn-help');
   const btnCopy     = document.getElementById('btn-copy');
+  const btnRegs     = document.getElementById('btn-regs');
   const overlay     = document.getElementById('modal-overlay');
   const modalClose  = document.getElementById('modal-close');
+  const regOverlay  = document.getElementById('reg-modal-overlay');
+  const regClose    = document.getElementById('reg-modal-close');
+  const regGrid     = document.getElementById('reg-grid');
+  const regNoData   = document.getElementById('reg-no-data');
+  const flagsSection= document.getElementById('flags-section');
+  const flagsRow    = document.getElementById('flags-row');
   const lineNumsEl  = document.getElementById('line-nums');
   const exampleSel  = document.getElementById('example-select');
   const runTimeEl   = document.getElementById('run-time');
@@ -750,7 +870,7 @@ END"></textarea>
   // ── Example programs ──────────────────────────────────
   const EXAMPLES = {
     hello:
-`; Hello World — outputs "Hello" to display
+`; Hello World — loads immediates into A and writes to display port
 MOVI 72       ; 'H'
 OUT 16
 MOVI 101      ; 'e'
@@ -763,49 +883,211 @@ MOVI 111      ; 'o'
 OUT 16
 END`,
 
+    arithmetic:
+`; Arithmetic — ADD/SUB/MUL/DIV/MOD with register and immediate forms
+; Computes 15 - 6 = 9, then 6 × 7 = 42; prints results
+
+; Register subtraction: 15 - 6 = 9
+MOVI 15
+MOV X, 6
+SUB X         ; A = 9
+ADDI 48       ; → ASCII '9'
+OUT 16
+MOVI 10
+OUT 16
+
+; Register multiply: 6 × 7 = 42, print "42"
+MOVI 6
+MOV X, 7
+MUL X         ; A = 42
+MOVR Y, A     ; save in Y
+
+DIVI 10       ; A = 4 (tens digit)
+ADDI 48
+OUT 16        ; '4'
+
+MOVR A, Y     ; restore 42
+MODI 10       ; A = 2 (units digit)
+ADDI 48
+OUT 16        ; '2'
+
+MOVI 10
+OUT 16
+END`,
+
+    logic:
+`; Logic & Shifts — AND mask, OR set bits, XOR flip, logical shift
+; Extracts both hex nibbles of 0xAB (171), then XOR case-toggle
+
+MOVI 171      ; A = 0xAB
+
+; High nibble: 0xAB >> 4 = 0x0A = 10 → print 'A'
+MOVR Y, A     ; save original
+LSRI 4        ; A = 10
+ADDI 55       ; 10 + 55 = 65 = 'A'
+OUT 16
+
+; Low nibble: 0xAB AND 0x0F = 0x0B = 11 → print 'B'
+MOVR A, Y
+ANDI 15       ; A = 11
+ADDI 55       ; 11 + 55 = 66 = 'B'
+OUT 16
+MOVI 10
+OUT 16
+
+; OR: set bit 5 of '@' (64) → '\`' (96)
+MOVI 64
+ORI 32        ; set bit 5 → 96 = '\`'
+OUT 16
+MOVI 10
+OUT 16
+
+; XOR: flip bit 5 of 'A' (65) → 'a' (97)
+MOVI 65
+XORI 32       ; toggle case bit → 97 = 'a'
+OUT 16
+MOVI 10
+OUT 16
+END`,
+
+    memory:
+`; Memory & Stack — LD/ST (load/store RAM) and PUSH/POP (stack)
+
+; Store ASCII codes for 'A','B','C' at mem[200..202]
+MOV X, 65     ; 'A'
+ST X, 200
+INC X
+ST X, 201     ; 'B'
+INC X
+ST X, 202     ; 'C'
+
+; Read back and print
+LD X, 200
+MOVR A, X
+OUT 16        ; 'A'
+LD X, 201
+MOVR A, X
+OUT 16        ; 'B'
+LD X, 202
+MOVR A, X
+OUT 16        ; 'C'
+MOVI 10
+OUT 16
+
+; Stack: save X, clobber it, restore via POP
+MOV X, 90     ; 'Z' — sentinel
+PUSH X        ; push X=90 onto stack
+MOV X, 0      ; clobber X
+POP X         ; restore from stack → X = 90
+MOVR A, X
+OUT 16        ; print 'Z' — proves stack preserved X
+MOVI 10
+OUT 16
+END`,
+
+    subroutine:
+`; Subroutine — JMP/RET call+return, PUSH/POP register preservation
+; Main calls print_ch three times; subroutine clobbers X internally
+; but saves/restores it → sentinel MOV X,77 must survive all calls
+
+MOV X, 77     ; 'M' — sentinel that must survive subroutine calls
+
+MOVI 72       ; 'H'
+JMP print_ch
+MOVI 105      ; 'i'
+JMP print_ch
+MOVI 33       ; '!'
+JMP print_ch
+
+; Verify X = 77 ('M') was preserved through all calls
+MOVR A, X
+OUT 16        ; prints 'M' if X was correctly preserved
+MOVI 10
+OUT 16
+END
+
+; Subroutine: print char in A, saves and restores X
+print_ch:
+    PUSH X
+    MOV X, 0    ; clobber X (to prove PUSH/POP works)
+    OUT 16      ; print the char
+    POP X
+    RET`,
+
     echo:
-`; Echo Keyboard — reads keys and mirrors to display
+`; Keyboard Echo — polls KBD_STATUS, reads KBD_DATA, echoes to display
+; Type characters in the Keyboard Input field above, then Run
 loop:
-    IN   1      ; A = KBD_STATUS
+    IN   1      ; A = KBD_STATUS (port 1)
     ANDI 1      ; isolate data-ready bit
-    BRZ  loop   ; no char yet
-    IN   0      ; A = KBD_DATA (clears latch)
-    OUT  16     ; write to display
-    BRA  loop   ; next character
+    BRZ  loop   ; no char yet — keep polling
+    IN   0      ; A = KBD_DATA (port 0); reading clears latch
+    OUT  16     ; echo to display (port 16)
+    BRA  loop   ; wait for next character
 END`,
 
-    fibonacci:
-`; Fibonacci — prints single-digit fib values (0,1,1,2,3,5,8)
-; X = prev, Y = curr; stops when value > 9
-MOV X, 0
-MOV Y, 1
-fib_loop:
-    MOVR A, X
-    CMPI 9
-    BGT  fib_done
-    ADDI 48       ; convert to ASCII digit
-    OUT  16
-    MOVI 10
-    OUT  16       ; newline
-    MOVR A, Y
-    ADD  X
-    MOVR X, Y
-    MOVR Y, A
-    BRA  fib_loop
-fib_done:
-END`,
+    timer:
+`; Timer Interrupt — periodic ISR prints 'A'–'Z', one letter per tick
+; Demonstrates: IVT setup, EI / WAIT / IRET, TIMER peripheral (ports 32/33)
+; timer_isr is at address 15 — must equal the MOVI value at addr 0
 
-    counter:
-`; Counter 0-9 — outputs each digit
-MOV X, 0
-count_loop:
+    MOVI 15         ; ISR address (count instructions below to verify)
+    MOVR X, A       ; ST only accepts X or Y
+    ST X, 190       ; mem[190] = 15 — TIMER interrupt vector
+
+    MOVI 100        ; timer period: fires every 100 cycles
+    OUT 33          ; → TIMER_PERIOD
+    MOVI 3          ; bit0=enable, bit1=periodic
+    OUT 32          ; → TIMER_CTRL
+
+    MOVI 1          ; bit0 = unmask timer interrupt
+    OUT 48          ; → IER
+
+    MOVI 64         ; X = 64; first INC X = 65 = 'A'
+    MOVR X, A
+
+    EI              ; global interrupt enable (I_flag = 1)
+idle:
+    WAIT            ; halt CPU until interrupt fires
+    BRA idle
+    END             ; (never reached)
+
+timer_isr:          ; address 15
+    INC X
     MOVR A, X
-    ADDI 48       ; ASCII '0'
-    OUT  16
-    INC  X
-    MOVR A, X
-    CMPI 10
-    BLT  count_loop
+    CMPI 91         ; past 'Z' (90)?
+    BGE stop_timer
+    OUT 16          ; print current letter
+    IRET
+
+stop_timer:
+    MOVI 0
+    OUT 32          ; TIMER_CTRL = 0 → stop timer
+    IRET`,
+
+    mining:
+`; SHA-256 Mining — hardware MINE instruction searches for a valid nonce
+; Inputs:  A = target (hash must be < target), X = data, Y = start nonce
+; Outputs: A = hash result, X = winning nonce
+
+MOV X, 200    ; data block to hash
+MOV Y, 0      ; starting nonce
+MOVI 64       ; target difficulty: hash < 64
+
+MINE          ; hardware SHA-256 accelerator — finds nonce automatically
+
+; Verify: print 'P' if hash < 64 (pass), 'F' otherwise (fail)
+CMPI 64
+BLT pass
+MOVI 70       ; 'F'
+OUT 16
+BRA done
+pass:
+MOVI 80       ; 'P'
+OUT 16
+done:
+MOVI 10
+OUT 16
 END`
   };
 
@@ -823,7 +1105,55 @@ END`
   btnHelp.addEventListener('click', () => overlay.classList.add('open'));
   modalClose.addEventListener('click', () => overlay.classList.remove('open'));
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') overlay.classList.remove('open'); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { overlay.classList.remove('open'); regOverlay.classList.remove('open'); } });
+
+  // ── Register Status modal ─────────────────────────────
+  let _lastRegisters = null;
+
+  function renderRegisters(regs) {
+    regGrid.innerHTML = '';
+    flagsRow.innerHTML = '';
+
+    if (!regs || Object.keys(regs).length === 0) {
+      regNoData.style.display = '';
+      regGrid.style.display = 'none';
+      flagsSection.style.display = 'none';
+      return;
+    }
+
+    regNoData.style.display = 'none';
+    regGrid.style.display = '';
+
+    const ORDER = ['A', 'X', 'Y', 'SP', 'PC'];
+    for (const name of ORDER) {
+      if (!(name in regs)) continue;
+      const val = regs[name];
+      const hex = '0x' + val.toString(16).toUpperCase().padStart(4, '0');
+      const card = document.createElement('div');
+      card.className = 'reg-card';
+      card.innerHTML = `<span class="reg-name">${name}</span><span class="reg-val">${hex}</span><span class="reg-dec">${val} (dec)</span><span class="reg-dec">${val.toString(2).padStart(16,'0')} (bin)</span>`;
+      regGrid.appendChild(card);
+    }
+
+    if (regs.flags) {
+      flagsSection.style.display = '';
+      for (const [f, v] of Object.entries(regs.flags)) {
+        const span = document.createElement('span');
+        span.className = 'flag-badge ' + (v ? 'set' : 'clear');
+        span.textContent = `${f}=${v}`;
+        flagsRow.appendChild(span);
+      }
+    } else {
+      flagsSection.style.display = 'none';
+    }
+  }
+
+  btnRegs.addEventListener('click', () => {
+    renderRegisters(_lastRegisters);
+    regOverlay.classList.add('open');
+  });
+  regClose.addEventListener('click', () => regOverlay.classList.remove('open'));
+  regOverlay.addEventListener('click', e => { if (e.target === regOverlay) regOverlay.classList.remove('open'); });
 
   // ── Clear ─────────────────────────────────────────────
   btnClear.addEventListener('click', () => {
@@ -831,6 +1161,8 @@ END`
     kbdEl.value   = '';
     dispEl.value  = '';
     runTimeEl.textContent = '';
+    _lastRegisters = null;
+    btnRegs.disabled = true;
     updateLineNums();
     setStatus('', '');
     saveToStorage();
@@ -877,11 +1209,17 @@ END`
   }
 
   // ── Run ───────────────────────────────────────────────
+  let _abortCtrl = null;
+
+  btnStop.addEventListener('click', () => { if (_abortCtrl) _abortCtrl.abort(); });
+
   btnRun.addEventListener('click', async () => {
     const code = codeEl.value.trim();
     if (!code) { setStatus('error', 'No assembly code to run.'); return; }
 
+    _abortCtrl = new AbortController();
     btnRun.disabled = true;
+    btnStop.disabled = false;
     btnRunLabel.textContent = '⏳ Running…';
     dispEl.value = '';
     runTimeEl.textContent = '';
@@ -894,6 +1232,7 @@ END`
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code, kbd_input: kbdEl.value }),
+        signal: _abortCtrl.signal,
       });
 
       const data = await res.json();
@@ -913,14 +1252,23 @@ END`
       const elapsed = ((performance.now() - t0) / 1000).toFixed(2);
       runTimeEl.textContent = `Ran in ${elapsed}s`;
 
+      _lastRegisters = data.registers || null;
+      btnRegs.disabled = !_lastRegisters || Object.keys(_lastRegisters).length === 0;
+
       animateDisplay(data.display_output || '');
 
     } catch (err) {
-      setStatus('error', 'Network error: ' + err.message);
+      if (err.name === 'AbortError') {
+        setStatus('warning', 'Stopped.');
+      } else {
+        setStatus('error', 'Network error: ' + err.message);
+      }
       runTimeEl.textContent = '';
     } finally {
       btnRun.disabled = false;
+      btnStop.disabled = true;
       btnRunLabel.textContent = '▶ Run';
+      _abortCtrl = null;
     }
   });
 
